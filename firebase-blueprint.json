@@ -1,0 +1,44 @@
+{
+  "entities": {
+    "Project": {
+      "title": "Project",
+      "description": "A 3D CAD modeling project",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier of the project"
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of the project"
+        },
+        "ownerId": {
+          "type": "string",
+          "description": "UID of the owner user"
+        },
+        "shapes": {
+          "type": "array",
+          "description": "List of shapes in the project canvas"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Creation timestamp"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Last updated timestamp"
+        }
+      },
+      "required": ["name", "ownerId", "shapes", "createdAt", "updatedAt"]
+    }
+  },
+  "firestore": {
+    "projects/{projectId}": {
+      "schema": "Project",
+      "description": "All CAD projects created by users"
+    }
+  }
+}

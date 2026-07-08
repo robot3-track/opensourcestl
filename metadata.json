@@ -1,0 +1,6 @@
+{
+  "name": "OpenSource STL Scanner & Studio",
+  "description": "A professional browser-based 3D STL scanner, shapes modeler, and constructive solid geometry studio.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
