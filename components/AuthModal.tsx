@@ -62,7 +62,7 @@ export default function AuthModal({ isOpen, onClose, user }: AuthModalProps) {
             <Lock className="w-6 h-6 text-sky-400" />
           </div>
           <h3 className="text-xl font-bold text-slate-100 font-sans">
-            {user ? "Cloud Vault Active" : "Sign In to Cloud Vault"}
+            {user ? "Cloud Vault Active" : "Sign In to the Cloud"}
           </h3>
           <p className="text-sm text-slate-400 mt-2 max-w-sm">
             {user

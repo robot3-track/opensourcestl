@@ -370,7 +370,7 @@ export default function Home() {
                 className="flex items-center gap-1.5 px-3.5 py-1.5 bg-indigo-950/30 border border-indigo-900/40 rounded-sm text-xs font-semibold text-indigo-300 hover:bg-indigo-950/50 transition cursor-pointer"
               >
                 <UserIcon className="w-3.5 h-3.5 text-indigo-400" />
-                <span>Sign In to Vault</span>
+                <span>Sign In</span>
               </button>
             )}
           </div>
