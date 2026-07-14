@@ -1,8 +1,21 @@
 "use client";
 
 import { useState } from "react";
-import { ShapeConfig } from "./ThreeCanvas";
-import { Trash2, Copy, Move, Eye, EyeOff, Sliders, ChevronDown, ChevronRight } from "lucide-react";
+import { Trash2, Copy, Move, Eye, EyeOff, Sliders, ChevronDown, ChevronRight, FileCode } from "lucide-react";
+
+// Explicit structural interface mapping support for custom imported geometries
+export interface ShapeConfig {
+  id: string;
+  name: string;
+  type: "box" | "sphere" | "cylinder" | "cone" | "torus" | "custom";
+  position: { x: number; y: number; z: number };
+  rotation: { x: number; y: number; z: number };
+  scale: { x: number; y: number; z: number };
+  color: string;
+  visible: boolean;
+  operation: "merge" | "subtract" | "intersect";
+  geometry?: any; // Native BufferGeometry tracking for imported STL data streams
+}
 
 interface ShapeEditorProps {
   shape: ShapeConfig | null;
@@ -64,8 +77,13 @@ export default function ShapeEditor({
       <div className="flex items-center justify-between p-4 border-b border-slate-900 bg-[#050811]">
         <div className="flex items-center gap-2">
           <Sliders className="w-4 h-4 text-sky-500" />
-          <div>
+          <div className="flex items-center gap-1.5">
             <h2 className="font-mono font-bold text-xs text-slate-100 uppercase">Shape Editor</h2>
+            {shape.type === "custom" && (
+              <span className="text-[8px] bg-sky-950/40 border border-sky-900/60 text-sky-400 font-bold px-1 py-0.5 rounded-sm flex items-center gap-0.5">
+                <FileCode size={8} /> STL
+              </span>
+            )}
           </div>
         </div>
         <button
@@ -109,7 +127,7 @@ export default function ShapeEditor({
                   className="w-full bg-[#050811] border border-slate-800 rounded-sm px-2 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-sky-500 font-mono"
                 >
                   <option value="merge">Union (Merge)</option>
-                  <option value="subtract">Subtract (Cut)</option>
+                  <option value="subtract">Subtract (Cut Hole)</option>
                   <option value="intersect">Intersect</option>
                 </select>
               </div>

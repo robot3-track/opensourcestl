@@ -8,7 +8,12 @@ import { Camera, RefreshCw, Layers, ArrowLeft, Upload, CheckCircle, ChevronDown,
 interface PicScannerSectionProps {
   onBack: () => void;
   showToast: (message: string, type: "success" | "error" | "info") => void;
-  onSendToPlayground: (scannedShape: { type: "sphere" | "cylinder" | "box" | "cone" | "torus"; name: string; color: string }) => void;
+  onSendToPlayground: (scannedShape: { 
+    type: "sphere" | "cylinder" | "box" | "cone" | "torus"; 
+    name: string; 
+    color: string;
+    operation: "merge" | "subtract" | "intersect";
+  }) => void;
 }
 
 interface AngleSlot {
@@ -32,6 +37,8 @@ export default function PicScannerSection({ onBack, showToast, onSendToPlaygroun
 
   // Aligned directly with CAD primitive types to fix the rendering bug
   const [targetPreset, setTargetPreset] = useState<"box" | "cylinder" | "torus">("box");
+  // Toggle mode tracking how this primitive behaves when loaded into the playground matrix
+  const [scannedOperation, setScannedOperation] = useState<"merge" | "subtract">("merge");
 
   // Fixed angular slots for precise photogrammetry reference alignment
   const [slots, setSlots] = useState<AngleSlot[]>([
@@ -264,7 +271,7 @@ export default function PicScannerSection({ onBack, showToast, onSendToPlaygroun
     }, 100);
   };
 
-  // Fixed rendering bug by cleanly transmitting the correct geometry type string
+  // Fixed rendering bug by cleanly transmitting the correct geometry type string and dynamic CSG mapping state
   const handleAddToCADPlayground = () => {
     const color = targetPreset === "box" ? "#cbd5e1" : targetPreset === "cylinder" ? "#94a3b8" : "#64748b";
     
@@ -272,6 +279,7 @@ export default function PicScannerSection({ onBack, showToast, onSendToPlaygroun
       type: targetPreset,
       name: `PHOTOGRAMMETRY_${targetPreset.toUpperCase()}`,
       color,
+      operation: scannedOperation,
     });
     showToast("Scanned primitive data transmitted to CAD workspace", "success");
   };
@@ -306,20 +314,34 @@ export default function PicScannerSection({ onBack, showToast, onSendToPlaygroun
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
-          <span className="text-[10px] text-slate-500 uppercase tracking-wider">TARGET PRIMITIVE:</span>
-          <select
-            value={targetPreset}
-            onChange={(e) => {
-              setTargetPreset(e.target.value as "box" | "cylinder" | "torus");
-              setActiveStep("upload");
-            }}
-            className="bg-[#050811] border border-slate-800 rounded-sm px-2 py-1 text-xs text-slate-200 focus:outline-none"
-          >
-            <option value="box">Prismatic Box / Cube</option>
-            <option value="cylinder">Machined Cylinder</option>
-            <option value="torus">Torus Ring / Washer</option>
-          </select>
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] text-slate-500 uppercase tracking-wider">MAP AS:</span>
+            <select
+              value={scannedOperation}
+              onChange={(e) => setScannedOperation(e.target.value as "merge" | "subtract")}
+              className="bg-[#050811] border border-slate-800 rounded-sm px-2 py-1 text-xs text-slate-200 focus:outline-none"
+            >
+              <option value="merge">Solid Mass (Union)</option>
+              <option value="subtract">Cutting Tool (Hole)</option>
+            </select>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] text-slate-500 uppercase tracking-wider">TARGET PRIMITIVE:</span>
+            <select
+              value={targetPreset}
+              onChange={(e) => {
+                setTargetPreset(e.target.value as "box" | "cylinder" | "torus");
+                setActiveStep("upload");
+              }}
+              className="bg-[#050811] border border-slate-800 rounded-sm px-2 py-1 text-xs text-slate-200 focus:outline-none"
+            >
+              <option value="box">Prismatic Box / Cube</option>
+              <option value="cylinder">Machined Cylinder</option>
+              <option value="torus">Torus Ring / Washer</option>
+            </select>
+          </div>
         </div>
       </header>
 
