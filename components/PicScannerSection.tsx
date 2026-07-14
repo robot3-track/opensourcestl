@@ -20,12 +20,8 @@ export default function PicScannerSection({ onBack, showToast, onSendToPlaygroun
   // Scanned Target Selection
   const [targetPreset, setTargetPreset] = useState<"crown" | "screw" | "torus">("crown");
 
-  // Mock pictures uploaded
-  const [pictures, setPictures] = useState<string[]>([
-    "https://images.unsplash.com/photo-1588854337236-6889d631faa8?w=200&auto=format&fit=crop&q=60", 
-    "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=200&auto=format&fit=crop&q=60",
-    "https://images.unsplash.com/photo-1535378917042-10a22c95931a?w=200&auto=format&fit=crop&q=60"
-  ]);
+  // Initialize with an empty array to remove random template images
+  const [pictures, setPictures] = useState<string[]>([]);
 
   // ThreeJS references
   const sceneRef = useRef<THREE.Scene | null>(null);
@@ -126,7 +122,8 @@ export default function PicScannerSection({ onBack, showToast, onSendToPlaygroun
       const positions = new Float32Array(count * 3);
       const colors = new Float32Array(count * 3);
 
-      const colorBase = targetPreset === "crown" ? new THREE.Color("#e2e8f0") : targetPreset === "screw" ? new THREE.Color("#475569") : new THREE.Color("#64748b");
+      // Uniform matte gray for points
+      const colorBase = new THREE.Color("#8c8c8c");
 
       for (let i = 0; i < count; i++) {
         let x = 0, y = 0, z = 0;
@@ -185,12 +182,12 @@ export default function PicScannerSection({ onBack, showToast, onSendToPlaygroun
 
     if (activeStep === "mesh") {
       let geometry: THREE.BufferGeometry;
-      let matColor = "#cbd5e1";
+      
+      // Uniform matte gray for STL prototype requirement
+      const matColor = "#8c8c8c";
 
       if (targetPreset === "crown") {
         geometry = new THREE.SphereGeometry(0.85, 32, 16);
-        matColor = "#f1f5f9";
-        
         const pos = geometry.attributes.position;
         const tempV = new THREE.Vector3();
         for (let i = 0; i < pos.count; i++) {
@@ -203,18 +200,16 @@ export default function PicScannerSection({ onBack, showToast, onSendToPlaygroun
         }
       } else if (targetPreset === "screw") {
         geometry = new THREE.CylinderGeometry(0.5, 0.52, 1.8, 32, 16);
-        matColor = "#94a3b8";
       } else {
         geometry = new THREE.TorusGeometry(0.9, 0.28, 16, 64);
-        matColor = "#64748b";
       }
 
       geometry.computeVertexNormals();
 
       const meshMat = new THREE.MeshStandardMaterial({
         color: matColor,
-        roughness: 0.4,
-        metalness: 0.1,
+        roughness: 0.8, // Increased roughness for matte finish
+        metalness: 0.0, // Removed metalness for clean gray prototype
         flatShading: false,
       });
 
@@ -231,7 +226,10 @@ export default function PicScannerSection({ onBack, showToast, onSendToPlaygroun
   }, [activeStep, targetPreset]);
 
   const startReconstruction = () => {
-    if (processing) return;
+    if (processing || pictures.length === 0) {
+      if (pictures.length === 0) showToast("Please upload reference photos first", "error");
+      return;
+    }
     setProcessing(true);
     setProgress(0);
     setActiveStep("features");
@@ -271,7 +269,7 @@ export default function PicScannerSection({ onBack, showToast, onSendToPlaygroun
 
   const handleAddToCADPlayground = () => {
     const shapeType = targetPreset === "crown" ? "sphere" : targetPreset === "screw" ? "cylinder" : "torus";
-    const color = targetPreset === "crown" ? "#f1f5f9" : targetPreset === "screw" ? "#94a3b8" : "#64748b";
+    const color = "#8c8c8c"; // Match the matte gray
     
     onSendToPlayground({
       type: shapeType,
@@ -286,7 +284,7 @@ export default function PicScannerSection({ onBack, showToast, onSendToPlaygroun
     if (!file) return;
 
     const url = URL.createObjectURL(file);
-    setPictures([url, ...pictures.slice(0, 2)]);
+    setPictures([url, ...pictures.slice(0, 5)]); // Keep up to 6 references
     setActiveStep("upload");
     showToast("Photo feed reference registered", "info");
   };
@@ -294,11 +292,11 @@ export default function PicScannerSection({ onBack, showToast, onSendToPlaygroun
   return (
     <div className="flex flex-col h-full bg-[#050811] text-slate-100 font-sans">
       {/* Header */}
-      <header className="flex items-center justify-between px-6 py-4 border-b border-slate-900 bg-[#080d19]/80 backdrop-blur-md">
+      <header className="flex items-center justify-between px-6 py-4 border-b border-slate-900 bg-[#080d19]">
         <div className="flex items-center gap-4">
           <button
             onClick={onBack}
-            className="p-1.5 hover:bg-slate-800 rounded-xl text-slate-400 hover:text-slate-100 transition cursor-pointer flex items-center gap-1.5 text-xs font-mono"
+            className="p-1.5 hover:bg-slate-800 rounded-sm text-slate-400 hover:text-slate-100 transition cursor-pointer flex items-center gap-1.5 text-xs font-mono"
           >
             <ArrowLeft className="w-3.5 h-3.5" />
             <span>BACK</span>
@@ -313,18 +311,18 @@ export default function PicScannerSection({ onBack, showToast, onSendToPlaygroun
         </div>
 
         <div className="flex items-center gap-2">
-          <span className="text-[10px] text-slate-500 font-mono uppercase tracking-wider">Source Template:</span>
+          <span className="text-[10px] text-slate-500 font-mono uppercase tracking-wider">Target Domain:</span>
           <select
             value={targetPreset}
             onChange={(e) => {
               setTargetPreset(e.target.value as "crown" | "screw" | "torus");
               setActiveStep("upload");
             }}
-            className="bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1 text-xs text-slate-200 focus:outline-none font-sans"
+            className="bg-slate-950 border border-slate-800 rounded-sm px-2.5 py-1 text-xs text-slate-200 focus:outline-none font-sans"
           >
-            <option value="crown">Dental Crown</option>
-            <option value="screw">Machined Pin Bolt</option>
-            <option value="torus">Torus Space Washer</option>
+            <option value="crown">Dental Mold</option>
+            <option value="screw">Machined Hardware</option>
+            <option value="torus">Structural Flange</option>
           </select>
         </div>
       </header>
@@ -338,7 +336,7 @@ export default function PicScannerSection({ onBack, showToast, onSendToPlaygroun
           {/* Progress Sequence */}
           <div className="space-y-1.5">
             <span className="text-[10px] text-slate-500 font-mono tracking-widest block uppercase">
-              RECONSTRUCTION TIMELINE
+              Reconstruction Timeline
             </span>
             <div className="flex flex-col gap-1.5">
               {[
@@ -351,7 +349,7 @@ export default function PicScannerSection({ onBack, showToast, onSendToPlaygroun
                 return (
                   <div
                     key={step.key}
-                    className={`px-3 py-1.5 rounded-lg border text-xs font-sans font-medium transition ${
+                    className={`px-3 py-1.5 rounded-sm border text-xs font-sans font-medium transition ${
                       isCurrent
                         ? "bg-slate-900 border-sky-500/30 text-sky-400 shadow-sm"
                         : "bg-transparent border-transparent text-slate-500"
@@ -372,7 +370,7 @@ export default function PicScannerSection({ onBack, showToast, onSendToPlaygroun
               </span>
               <label className="text-[10px] text-sky-400 hover:text-sky-300 font-sans cursor-pointer flex items-center gap-1 select-none">
                 <Plus className="w-3 h-3" />
-                <span>Add perspective</span>
+                <span>Upload Target</span>
                 <input
                   type="file"
                   accept="image/*"
@@ -382,33 +380,39 @@ export default function PicScannerSection({ onBack, showToast, onSendToPlaygroun
               </label>
             </div>
 
-            <div className="grid grid-cols-3 gap-1.5 bg-slate-950 p-1.5 border border-slate-900 rounded-xl">
-              {pictures.map((url, i) => (
-                <div key={i} className="relative aspect-square rounded-lg overflow-hidden border border-slate-800 bg-slate-900">
-                  <img
-                    src={url}
-                    alt={`Reference ${i + 1}`}
-                    className="w-full h-full object-cover"
-                  />
-                  
-                  {activeStep === "features" && (
-                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none bg-sky-500/10">
-                      <div className="w-1.5 h-1.5 bg-sky-400 rounded-full animate-ping" />
-                    </div>
-                  )}
-
-                  {activeStep !== "upload" && activeStep !== "features" && (
-                    <div className="absolute top-1 right-1 bg-sky-500 text-white rounded-full p-0.5 shadow-md">
-                      <CheckCircle className="w-2.5 h-2.5" />
-                    </div>
-                  )}
+            <div className="grid grid-cols-3 gap-1.5 bg-slate-950 p-1.5 border border-slate-900 rounded-sm min-h-[80px]">
+              {pictures.length === 0 ? (
+                <div className="col-span-3 flex items-center justify-center border border-dashed border-slate-800 rounded-sm text-[10px] text-slate-600 font-mono p-4">
+                  Awaiting image uploads...
                 </div>
-              ))}
+              ) : (
+                pictures.map((url, i) => (
+                  <div key={i} className="relative aspect-square rounded-sm overflow-hidden border border-slate-800 bg-slate-900">
+                    <img
+                      src={url}
+                      alt={`Reference ${i + 1}`}
+                      className="w-full h-full object-cover"
+                    />
+                    
+                    {activeStep === "features" && (
+                      <div className="absolute inset-0 flex items-center justify-center pointer-events-none bg-sky-500/10">
+                        <div className="w-1.5 h-1.5 bg-sky-400 rounded-full animate-ping" />
+                      </div>
+                    )}
+
+                    {activeStep !== "upload" && activeStep !== "features" && (
+                      <div className="absolute top-1 right-1 bg-sky-500 text-white rounded-full p-0.5 shadow-md">
+                        <CheckCircle className="w-2.5 h-2.5" />
+                      </div>
+                    )}
+                  </div>
+                ))
+              )}
             </div>
           </div>
 
           {/* Action buttons */}
-          <div className="space-y-3 bg-slate-900 border border-slate-800 rounded-2xl p-4 mt-auto">
+          <div className="space-y-3 bg-slate-900 border border-slate-800 rounded-sm p-4 mt-auto">
             <span className="text-[10px] text-slate-400 font-mono tracking-widest block uppercase">
               Process Controls
             </span>
@@ -416,8 +420,8 @@ export default function PicScannerSection({ onBack, showToast, onSendToPlaygroun
             {activeStep === "upload" && (
               <button
                 onClick={startReconstruction}
-                disabled={processing}
-                className="w-full py-2 bg-slate-800 hover:bg-slate-700 disabled:bg-slate-950 text-white border border-slate-700 disabled:border-slate-850 font-medium text-xs rounded-xl shadow transition cursor-pointer flex items-center justify-center gap-1.5"
+                disabled={processing || pictures.length === 0}
+                className="w-full py-2 bg-slate-800 hover:bg-slate-700 disabled:bg-slate-950 text-white border border-slate-700 disabled:border-slate-850 font-medium text-xs rounded-sm transition cursor-pointer flex items-center justify-center gap-1.5"
               >
                 <Sparkles className="w-3.5 h-3.5" />
                 Align &amp; Generate Point Cloud
@@ -428,7 +432,7 @@ export default function PicScannerSection({ onBack, showToast, onSendToPlaygroun
               <div className="flex flex-col items-center justify-center text-center py-2">
                 <RefreshCw className="w-5 h-5 text-sky-400 animate-spin mb-1.5" />
                 <span className="text-[10px] font-mono text-sky-400 font-semibold uppercase tracking-wider">Analyzing Photos: {progress}%</span>
-                <div className="w-full bg-slate-800 h-1 rounded-full mt-2 overflow-hidden">
+                <div className="w-full bg-slate-800 h-1 rounded-none mt-2 overflow-hidden">
                   <div className="bg-sky-500 h-full transition-all duration-200" style={{ width: `${progress}%` }} />
                 </div>
               </div>
@@ -442,7 +446,7 @@ export default function PicScannerSection({ onBack, showToast, onSendToPlaygroun
                 <button
                   onClick={runPoissonReconstruction}
                   disabled={processing}
-                  className="w-full py-2 bg-slate-800 hover:bg-slate-700 disabled:bg-slate-950 text-white border border-slate-700 disabled:border-slate-850 font-medium text-xs rounded-xl shadow transition cursor-pointer flex items-center justify-center gap-1.5"
+                  className="w-full py-2 bg-slate-800 hover:bg-slate-700 disabled:bg-slate-950 text-white border border-slate-700 disabled:border-slate-850 font-medium text-xs rounded-sm transition cursor-pointer flex items-center justify-center gap-1.5"
                 >
                   <Layers className="w-3.5 h-3.5" />
                   Generate Solid Mesh
@@ -454,7 +458,7 @@ export default function PicScannerSection({ onBack, showToast, onSendToPlaygroun
               <div className="space-y-2">
                 <button
                   onClick={handleAddToCADPlayground}
-                  className="w-full py-2.5 bg-gradient-to-r from-sky-600 to-indigo-600 hover:from-sky-500 hover:to-indigo-500 text-white font-semibold text-xs rounded-xl shadow-lg transition cursor-pointer flex items-center justify-center gap-1.5"
+                  className="w-full py-2.5 bg-sky-600 hover:bg-sky-500 text-white font-semibold text-xs rounded-sm transition cursor-pointer flex items-center justify-center gap-1.5"
                 >
                   <Plus className="w-3.5 h-3.5" />
                   Send to Solid Workspace
@@ -466,11 +470,11 @@ export default function PicScannerSection({ onBack, showToast, onSendToPlaygroun
 
         {/* Right pane: Viewport Canvas */}
         <div className="flex-1 relative bg-[#050811] flex flex-col p-4">
-          <div className="relative w-full h-full rounded-2xl overflow-hidden border border-slate-900 shadow-xl bg-[#03060c]">
+          <div className="relative w-full h-full rounded-sm overflow-hidden border border-slate-900 shadow-xl bg-[#03060c]">
             <div ref={containerRef} className="w-full h-full cursor-grab active:cursor-grabbing" />
 
             {/* Instruction bar */}
-            <div className="absolute bottom-4 left-4 right-4 bg-[#080d19]/90 border border-slate-800 rounded-xl p-3 flex items-center justify-between text-[11px] font-mono text-slate-400">
+            <div className="absolute bottom-4 left-4 right-4 bg-[#080d19]/90 border border-slate-800 rounded-sm p-3 flex items-center justify-between text-[11px] font-mono text-slate-400">
               <span className="flex items-center gap-1.5">
                 <Camera className="w-3.5 h-3.5 text-sky-400" />
                 <span className="uppercase tracking-wider">STATE: {activeStep === "upload" ? "Ready" : activeStep === "features" ? "Analyzing..." : activeStep === "points" ? "Point cloud" : "Closed mesh"}</span>
@@ -479,7 +483,7 @@ export default function PicScannerSection({ onBack, showToast, onSendToPlaygroun
             </div>
 
             {processing && activeStep !== "features" && (
-              <div className="absolute inset-0 bg-[#050811]/70 backdrop-blur-sm flex flex-col items-center justify-center">
+              <div className="absolute inset-0 bg-[#050811]/90 flex flex-col items-center justify-center">
                 <RefreshCw className="w-6 h-6 text-sky-400 animate-spin mb-2" />
                 <span className="text-xs font-mono text-slate-300 uppercase tracking-wider">Reconstructing Boundary: {progress}%</span>
               </div>
