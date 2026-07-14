@@ -45,12 +45,9 @@ export default function ThreeCanvas({
   const shapesGroupRef = useRef<THREE.Group | null>(null);
   const csgMeshRef = useRef<THREE.Mesh | null>(null);
 
-  // Keep tracks of meshes representing individual primitive shapes
   const primitiveMeshesRef = useRef<{ [id: string]: THREE.Mesh }>({});
-
   const [transformMode, setTransformMode] = useState<"translate" | "rotate" | "scale">("translate");
 
-  // Keep shapes and callbacks fresh in refs to prevent closures from holding stale values
   const shapesRef = useRef(shapes);
   const onUpdateShapeRef = useRef(onUpdateShape);
 
@@ -65,13 +62,11 @@ export default function ThreeCanvas({
   useEffect(() => {
     if (!containerRef.current) return;
 
-    // Create scene with a dark tech theme background
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color("#090d16");
-    scene.fog = new THREE.FogExp2("#090d16", 0.015);
+    scene.background = new THREE.Color("#050811");
+    scene.fog = new THREE.FogExp2("#050811", 0.015);
     sceneRef.current = scene;
 
-    // Camera setup
     const camera = new THREE.PerspectiveCamera(
       45,
       containerRef.current.clientWidth / containerRef.current.clientHeight,
@@ -81,30 +76,25 @@ export default function ThreeCanvas({
     camera.position.set(6, 6, 8);
     cameraRef.current = camera;
 
-    // Renderer with high-quality antialiasing and shadow support
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     renderer.setSize(containerRef.current.clientWidth, containerRef.current.clientHeight);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     
-    // Clear any previous canvas
     containerRef.current.innerHTML = "";
     containerRef.current.appendChild(renderer.domElement);
     rendererRef.current = renderer;
 
-    // Controls setup
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
     controls.dampingFactor = 0.05;
-    controls.maxPolarAngle = Math.PI / 2 - 0.02; // Prevent going underground
+    controls.maxPolarAngle = Math.PI / 2 - 0.02;
     controlsRef.current = controls;
 
-    // Ambient Lighting
     const ambientLight = new THREE.AmbientLight("#1e293b", 1.5);
     scene.add(ambientLight);
 
-    // Directional Main Key Light (Shadow casting)
     const dirLight = new THREE.DirectionalLight("#ffffff", 2.0);
     dirLight.position.set(10, 15, 10);
     dirLight.castShadow = true;
@@ -120,43 +110,34 @@ export default function ThreeCanvas({
     dirLight.shadow.bias = -0.0005;
     scene.add(dirLight);
 
-    // Soft Blue Fill Light
     const fillLight = new THREE.DirectionalLight("#38bdf8", 0.8);
     fillLight.position.set(-10, 5, -10);
     scene.add(fillLight);
 
-    // Warm Accent Rim Light
     const rimLight = new THREE.PointLight("#f43f5e", 1.5, 30);
     rimLight.position.set(3, 5, -5);
     scene.add(rimLight);
 
-    // CAD Grid & Ground Platform
     const gridHelper = new THREE.GridHelper(30, 30, "#475569", "#1e293b");
     gridHelper.position.y = -0.01;
     scene.add(gridHelper);
 
-    // Polar Grid for mechanical feeling
     const polarGrid = new THREE.PolarGridHelper(15, 16, 8, 64, "#334155", "#1e293b");
     polarGrid.position.y = -0.005;
     scene.add(polarGrid);
 
-    // Add Axes Helper
     const axesHelper = new THREE.AxesHelper(3);
     axesHelper.position.set(-5, 0.05, -5);
-    // Style axes helper nicely
     scene.add(axesHelper);
 
-    // Group to hold all primitive shapes for raycasting and CSG input
     const shapesGroup = new THREE.Group();
     scene.add(shapesGroup);
     shapesGroupRef.current = shapesGroup;
 
-    // Create TransformControls for interactive gizmos
     const transformControls = new TransformControls(camera, renderer.domElement);
     scene.add(transformControls);
     transformControlsRef.current = transformControls;
 
-    // Disable orbit camera controls during dragging, and trigger React sync on release
     transformControls.addEventListener("dragging-changed", (event) => {
       if (controlsRef.current) {
         controlsRef.current.enabled = !event.value;
@@ -190,24 +171,20 @@ export default function ThreeCanvas({
       }
     });
 
-    // Raycasting for shape selection
     const raycaster = new THREE.Raycaster();
     const mouse = new THREE.Vector2();
 
     const handleCanvasClick = (event: MouseEvent) => {
-      // Prevent selection changes when actively dragging or clicking the transform handle gizmos
       if (transformControlsRef.current?.dragging || transformControlsRef.current?.pointerIsOver) {
         return;
       }
 
       if (!containerRef.current || !cameraRef.current) return;
       const rect = containerRef.current.getBoundingClientRect();
-      // Calculate normalized mouse coordinates
       mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
       mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
 
       raycaster.setFromCamera(mouse, cameraRef.current);
-      // Raycast against primitives if they are shown, otherwise against CSG mesh
       const intersects = raycaster.intersectObjects(
         showPrimitives ? shapesGroup.children : csgMeshRef.current ? [csgMeshRef.current] : [],
         true
@@ -226,7 +203,6 @@ export default function ThreeCanvas({
 
     containerRef.current.addEventListener("click", handleCanvasClick);
 
-    // Resize observer
     const handleResize = () => {
       if (!containerRef.current || !cameraRef.current || !rendererRef.current) return;
       const width = containerRef.current.clientWidth;
@@ -241,7 +217,6 @@ export default function ThreeCanvas({
     });
     resizeObserver.observe(containerRef.current);
 
-    // Animation Loop
     let animationFrameId: number;
     const animate = () => {
       animationFrameId = requestAnimationFrame(animate);
@@ -264,13 +239,11 @@ export default function ThreeCanvas({
     };
   }, [showPrimitives, onSelectShape]);
 
-  // Handle Updates to Shapes (Rebuilds primitives & CSG model)
   useEffect(() => {
     const scene = sceneRef.current;
     const shapesGroup = shapesGroupRef.current;
     if (!scene || !shapesGroup) return;
 
-    // 1. Clear existing meshes
     while (shapesGroup.children.length > 0) {
       shapesGroup.remove(shapesGroup.children[0]);
     }
@@ -280,10 +253,8 @@ export default function ThreeCanvas({
     }
     primitiveMeshesRef.current = {};
 
-    // Filter only visible shapes
     const visibleShapes = shapes.filter((s) => s.visible);
 
-    // Helper to get geometry based on shape type
     const createGeometry = (type: ShapeConfig["type"]) => {
       switch (type) {
         case "box":
@@ -301,12 +272,10 @@ export default function ThreeCanvas({
       }
     };
 
-    // 2. Re-create primitive meshes in the shapesGroup
     visibleShapes.forEach((shape) => {
       const geometry = createGeometry(shape.type);
       const isSelected = shape.id === selectedShapeId;
 
-      // Material for individual primitive preview
       const material = new THREE.MeshStandardMaterial({
         color: shape.color,
         roughness: 0.4,
@@ -327,10 +296,8 @@ export default function ThreeCanvas({
       mesh.castShadow = true;
       mesh.receiveShadow = true;
 
-      // Store ID metadata in mesh userData for raycasting
       mesh.userData = { shapeId: shape.id };
 
-      // Add a thin highlight wireframe overlay if selected
       if (isSelected && showPrimitives) {
         const edgeGeom = new THREE.EdgesGeometry(geometry);
         const lineMat = new THREE.LineBasicMaterial({ color: "#f43f5e", linewidth: 2 });
@@ -342,26 +309,21 @@ export default function ThreeCanvas({
       primitiveMeshesRef.current[shape.id] = mesh;
     });
 
-    // 3. Compute CSG model (Constructive Solid Geometry)
     try {
       let combinedCSG: CSG | null = null;
 
-      // Ensure we process shapes in order: primary first, then others subtracted/intersected/merged
       visibleShapes.forEach((shape) => {
         const mesh = primitiveMeshesRef.current[shape.id];
         if (!mesh) return;
 
-        // Ensure matrices are up to date
         mesh.updateMatrix();
         mesh.updateMatrixWorld();
 
         const currentCSG = CSG.fromMesh(mesh);
 
         if (!combinedCSG) {
-          // First shape initializes the base CSG
           combinedCSG = currentCSG;
         } else {
-          // Perform operation
           if (shape.operation === "merge") {
             combinedCSG = combinedCSG.union(currentCSG);
           } else if (shape.operation === "subtract") {
@@ -372,14 +334,11 @@ export default function ThreeCanvas({
         }
       });
 
-      // Render the compiled CSG solid mesh
       if (combinedCSG) {
-        // Build mesh from CSG
         const resultMesh = CSG.toMesh(combinedCSG, new THREE.Matrix4());
         
-        // Give the solid final product a sleek metallic titanium styling
         resultMesh.material = new THREE.MeshStandardMaterial({
-          color: "#38bdf8", // Cool digital cyan / titanium
+          color: "#38bdf8",
           roughness: 0.25,
           metalness: 0.8,
           wireframe: showWireframe,
@@ -388,9 +347,8 @@ export default function ThreeCanvas({
 
         resultMesh.castShadow = true;
         resultMesh.receiveShadow = true;
-        resultMesh.position.set(0, 0, 0); // Combined is in global center
+        resultMesh.position.set(0, 0, 0);
 
-        // Attach metadata for raycasting selection
         resultMesh.userData = { isCsgModel: true };
 
         scene.add(resultMesh);
@@ -400,7 +358,6 @@ export default function ThreeCanvas({
       console.warn("CSG execution warning:", csgError);
     }
 
-    // 4. Attach TransformControls to the currently selected primitive shape mesh
     const transformControls = transformControlsRef.current;
     if (transformControls) {
       if (selectedShapeId && showPrimitives) {
@@ -417,7 +374,6 @@ export default function ThreeCanvas({
     }
   }, [shapes, selectedShapeId, showPrimitives, showWireframe, transformMode]);
 
-  // Sync TransformControls mode when transformMode state changes
   useEffect(() => {
     const transformControls = transformControlsRef.current;
     if (transformControls) {
@@ -425,7 +381,6 @@ export default function ThreeCanvas({
     }
   }, [transformMode]);
 
-  // Keyboard shortcuts for switching transform modes (W: Translate, E: Rotate, R: Scale)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (!selectedShapeId) return;
@@ -450,12 +405,10 @@ export default function ThreeCanvas({
   }, [selectedShapeId]);
 
   return (
-    <div className="relative w-full h-full rounded-2xl overflow-hidden border border-slate-800 shadow-2xl">
-      {/* 3D Canvas Container */}
+    <div className="relative w-full h-full rounded-sm overflow-hidden border border-slate-900">
       <div ref={containerRef} className="w-full h-full cursor-grab active:cursor-grabbing" />
 
-      {/* Control overlay on the viewport */}
-      <div className="absolute top-4 left-4 bg-slate-900/90 backdrop-blur-md border border-slate-800 rounded-xl px-3 py-2 text-xs flex flex-col gap-1 shadow-lg pointer-events-none">
+      <div className="absolute top-4 left-4 bg-[#080d19] border border-slate-800 rounded-sm px-3 py-2 text-[10px] flex flex-col gap-1 pointer-events-none">
         <span className="font-mono text-slate-400">CAMERA: Orbit drag | Pan right-click | Zoom scroll</span>
         {selectedShapeId && showPrimitives ? (
           <span className="font-mono text-indigo-400">GIZMO: Drag handles | [W] Move | [E] Rotate | [R] Scale</span>
@@ -464,43 +417,42 @@ export default function ThreeCanvas({
         )}
       </div>
 
-      {/* Floating Transform Mode Controls */}
       {selectedShapeId && showPrimitives && (
-        <div className="absolute top-4 right-4 bg-slate-900/90 backdrop-blur-md border border-slate-800 rounded-xl p-1 flex gap-1 shadow-lg z-10">
+        <div className="absolute top-4 right-4 bg-[#080d19] border border-slate-800 rounded-sm p-1 flex gap-1 z-10">
           <button
             onClick={() => setTransformMode("translate")}
-            className={`px-2.5 py-1.5 rounded-lg flex items-center gap-1.5 text-xs font-mono font-medium transition cursor-pointer ${
+            className={`px-2.5 py-1 rounded-sm flex items-center gap-1.5 text-[10px] font-mono font-semibold transition cursor-pointer ${
               transformMode === "translate"
-                ? "bg-purple-600 text-white shadow-md shadow-purple-600/20"
-                : "text-slate-400 hover:text-slate-200 hover:bg-slate-800"
+                ? "bg-slate-900 text-sky-400 border border-slate-700"
+                : "text-slate-400 hover:text-slate-200 border border-transparent"
             }`}
             title="Translate Mode [W]"
           >
-            <Move className="w-3.5 h-3.5" />
+            <Move className="w-3 h-3" />
             <span>Move [W]</span>
           </button>
           <button
             onClick={() => setTransformMode("rotate")}
-            className={`px-2.5 py-1.5 rounded-lg flex items-center gap-1.5 text-xs font-mono font-medium transition cursor-pointer ${
+            className={`px-2.5 py-1 rounded-sm flex items-center gap-1.5 text-[10px] font-mono font-semibold transition cursor-pointer ${
               transformMode === "rotate"
-                ? "bg-purple-600 text-white shadow-md shadow-purple-600/20"
-                : "text-slate-400 hover:text-slate-200 hover:bg-slate-800"
+                ? "bg-slate-900 text-sky-400 border border-slate-700"
+                : "text-slate-400 hover:text-slate-200 border border-transparent"
             }`}
             title="Rotate Mode [E]"
           >
-            <RotateCw className="w-3.5 h-3.5" />
+            <RotateCw className="w-3 h-3" />
             <span>Rotate [E]</span>
           </button>
           <button
             onClick={() => setTransformMode("scale")}
-            className={`px-2.5 py-1.5 rounded-lg flex items-center gap-1.5 text-xs font-mono font-medium transition cursor-pointer ${
+            className={`px-2.5 py-1 rounded-sm flex items-center gap-1.5 text-[10px] font-mono font-semibold transition cursor-pointer ${
               transformMode === "scale"
-                ? "bg-purple-600 text-white shadow-md shadow-purple-600/20"
-                : "text-slate-400 hover:text-slate-200 hover:bg-slate-800"
+                ? "bg-slate-900 text-sky-400 border border-slate-700"
+                : "text-slate-400 hover:text-slate-200 border border-transparent"
             }`}
             title="Scale Mode [R]"
           >
-            <Maximize2 className="w-3.5 h-3.5" />
+            <Maximize2 className="w-3 h-3" />
             <span>Scale [R]</span>
           </button>
         </div>
