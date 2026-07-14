@@ -58,14 +58,6 @@ export default function Scanner({ onAddScannedShape }: ScannerProps) {
           />
         </div>
 
-        {/* Embedded Generation Parameters */}
-        <div className="bg-slate-950 border border-slate-800 p-3 rounded-sm">
-          <span className="text-[9px] text-slate-500 font-mono block mb-1.5 uppercase tracking-wider">Generation Parameters</span>
-          <p className="text-[10px] text-slate-400 font-sans leading-relaxed italic">
-            "Create a high-quality, continuous 3D mesh model of <strong className="text-sky-400 not-italic">{targetObject || "[Insert Object]"}</strong> designed specifically for 3D printing and STL export. The model should be a solid manifold mesh with a clean, cohesive structure, smooth contours, and optimized geometry. Omit all textures, colors, floating artifacts, and background environments. The final render should be an unpainted, uniform matte-gray prototype suitable for direct STL export"
-          </p>
-        </div>
-
         <div className="grid grid-cols-2 gap-2">
           <div>
             <label className="text-[10px] text-slate-400 font-mono block mb-1 uppercase tracking-wider">Resolution</label>
