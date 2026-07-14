@@ -1,10 +1,10 @@
 {
-  "projectId": "cool-citron-bw1xt",
+  "projectId": "open-source-stl-vercel",
   "appId": "1:24078986731:web:f974f15e6d723406f87dae",
   "apiKey": "AIzaSyBl3W4IGg2GKqPBry1SJPNz8MBLx2ttdxg",
-  "authDomain": "cool-citron-bw1xt.firebaseapp.com",
+  "authDomain": "opensourcestl.vercel.app",
   "firestoreDatabaseId": "ai-studio-opensourcestlsca-c07e2734-7bc8-4590-8896-cd4b268032d7",
-  "storageBucket": "cool-citron-bw1xt.firebasestorage.app",
+  "storageBucket": "opensourcestl.vercel.app",
   "messagingSenderId": "24078986731",
   "measurementId": ""
 }
