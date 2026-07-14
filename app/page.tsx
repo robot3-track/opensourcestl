@@ -37,9 +37,9 @@ import {
   Upload,
   Camera,
   ArrowLeft,
-  Sparkles,
+  Terminal,
+  Activity,
 } from "lucide-react";
-import confetti from "canvas-confetti";
 
 export default function Home() {
   const [user, setUser] = useState<User | null>(null);
@@ -51,7 +51,7 @@ export default function Home() {
       position: { x: 0, y: 0.5, z: 0 },
       rotation: { x: 0, y: 0, z: 0 },
       scale: { x: 2, y: 1, z: 2 },
-      color: "#3b82f6",
+      color: "#a1a1aa",
       operation: "merge",
       visible: true,
     },
@@ -71,12 +71,12 @@ export default function Home() {
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [projects, setProjects] = useState<any[]>([]);
   const [currentProjectId, setCurrentProjectId] = useState<string | null>(null);
-  const [projectName, setProjectName] = useState("Mechanical Joint");
+  const [projectName, setProjectName] = useState("WORKSPACE_PROJECT_01");
   const [isProjectManagerOpen, setIsProjectManagerOpen] = useState(false);
   const [showPrimitives, setShowPrimitives] = useState(true);
-  const [showWireframe, setShowWireframe] = useState(false);
+  const [showWireframe, setShowWireframe] = useState(true);
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" | "info" } | null>(null);
-  const [activeView, setActiveView] = useState<"home" | "stl-viewer" | "pic-scanner" | "playground">("home");
+  const [activeView, setActiveView] = useState<"dashboard" | "stl-viewer" | "pic-scanner" | "workspace">("dashboard");
 
   const handleSendToPlayground = (scannedShape: { type: "sphere" | "cylinder" | "box" | "cone" | "torus"; name: string; color: string }) => {
     const id = `scanned-${Date.now()}`;
@@ -93,21 +93,19 @@ export default function Home() {
     };
     setShapes([...shapes, newShape]);
     setSelectedShapeId(id);
-    setActiveView("playground");
+    setActiveView("workspace");
   };
 
-  // Monitor Firebase auth state
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
       setUser(firebaseUser);
       if (firebaseUser) {
-        showToast(`Authenticated as ${firebaseUser.displayName || firebaseUser.email}`, "success");
+        showToast(`SYS_AUTH: ${firebaseUser.email}`, "success");
       }
     });
     return () => unsubscribe();
   }, []);
 
-  // Sync projects from Cloud Vault Firestore
   useEffect(() => {
     if (!user) {
       setProjects([]);
@@ -127,8 +125,8 @@ export default function Home() {
         setProjects(loadedProjects);
       },
       (error) => {
-        console.error("Firestore loading error:", error);
-        showToast("Error loading cloud projects", "error");
+        console.error("Firestore initialization error:", error);
+        showToast("ERR_FS_LOAD", "error");
       }
     );
 
@@ -137,26 +135,25 @@ export default function Home() {
 
   const showToast = (message: string, type: "success" | "error" | "info" = "info") => {
     setToast({ message, type });
-    setTimeout(() => setToast(null), 4000);
+    setTimeout(() => setToast(null), 3000);
   };
 
-  // Shape CRUD handlers
   const handleAddShape = (type: ShapeConfig["type"], customName?: string) => {
     const id = `shape-${Date.now()}`;
     const newShape: ShapeConfig = {
       id,
-      name: customName || `Primitive ${type.charAt(0).toUpperCase() + type.slice(1)}`,
+      name: customName || `PRIMITIVE_${type.toUpperCase()}`,
       type,
-      position: { x: (Math.random() - 0.5) * 2, y: 0.5, z: (Math.random() - 0.5) * 2 },
+      position: { x: 0, y: 0.5, z: 0 },
       rotation: { x: 0, y: 0, z: 0 },
       scale: { x: 1, y: 1, z: 1 },
-      color: "#10b981",
+      color: "#71717a",
       operation: "merge",
       visible: true,
     };
     setShapes([...shapes, newShape]);
     setSelectedShapeId(id);
-    showToast(`Added ${newShape.name}`, "success");
+    showToast(`ADD_NODE: ${newShape.name}`, "success");
   };
 
   const handleUpdateShape = (updatedShape: ShapeConfig) => {
@@ -166,7 +163,7 @@ export default function Home() {
   const handleDeleteShape = (id: string) => {
     setShapes(shapes.filter((s) => s.id !== id));
     if (selectedShapeId === id) setSelectedShapeId(null);
-    showToast("Shape deleted", "info");
+    showToast("DEL_NODE_SUCCESS", "info");
   };
 
   const handleCloneShape = (shape: ShapeConfig) => {
@@ -174,15 +171,14 @@ export default function Home() {
     const cloned: ShapeConfig = {
       ...shape,
       id,
-      name: `${shape.name} (Copy)`,
+      name: `${shape.name}_COPY`,
       position: { ...shape.position, x: shape.position.x + 0.5, z: shape.position.z + 0.5 },
     };
     setShapes([...shapes, cloned]);
     setSelectedShapeId(id);
-    showToast(`Cloned ${shape.name}`, "success");
+    showToast(`CLONE_NODE: ${cloned.name}`, "success");
   };
 
-  // Cloud Project CRUD
   const handleSaveProject = async () => {
     if (!user) {
       setIsAuthOpen(true);
@@ -196,17 +192,16 @@ export default function Home() {
         name: projectName,
         ownerId: user.uid,
         shapes,
-        createdAt: new Date().toISOString(), // Fallback / rules check
+        createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };
       
       await setDoc(doc(db, "projects", projectId), payload);
       setCurrentProjectId(projectId);
-      confetti({ particleCount: 80, spread: 60, origin: { y: 0.8 } });
-      showToast("Project safely saved to Cloud Vault", "success");
+      showToast("DB_WRITE_SUCCESS", "success");
     } catch (err: any) {
       handleFirestoreError(err, OperationType.WRITE, path);
-      showToast("Failed to save project", "error");
+      showToast("DB_WRITE_FAIL", "error");
     }
   };
 
@@ -216,7 +211,7 @@ export default function Home() {
     setProjectName(proj.name);
     setSelectedShapeId(null);
     setIsProjectManagerOpen(false);
-    showToast(`Loaded "${proj.name}"`, "success");
+    showToast(`LOAD_PROJECT_OK`, "success");
   };
 
   const handleDeleteProject = async (id: string, e: React.MouseEvent) => {
@@ -224,10 +219,8 @@ export default function Home() {
     const path = `projects/${id}`;
     try {
       await deleteDoc(doc(db, "projects", id));
-      if (currentProjectId === id) {
-        setCurrentProjectId(null);
-      }
-      showToast("Project permanently deleted", "info");
+      if (currentProjectId === id) setCurrentProjectId(null);
+      showToast("DB_DELETE_SUCCESS", "info");
     } catch (err: any) {
       handleFirestoreError(err, OperationType.DELETE, path);
     }
@@ -236,19 +229,16 @@ export default function Home() {
   const startNewProject = () => {
     setShapes([]);
     setCurrentProjectId(null);
-    setProjectName("New Mechanical Part");
+    setProjectName("UNTITLED_WORKSPACE");
     setSelectedShapeId(null);
-    showToast("Created fresh scene", "info");
+    showToast("RESET_CANVAS", "info");
   };
 
-  // Generates ASCII STL metadata representing the active primitive shapes
   const handleExportSTL = () => {
-    let stlText = "solid opensource_stl_studio\n";
-    
-    // Iterate and output simple facet vertices of all shapes
+    let stlText = "solid academic_mesh_studio\n";
     shapes.forEach((shape) => {
       if (!shape.visible) return;
-      stlText += `\n# Shape: ${shape.name} (${shape.type})\n`;
+      stlText += `\n# NODE_NAME: ${shape.name} TYPE: ${shape.type}\n`;
       stlText += `  facet normal 0 0 0\n`;
       stlText += `    outer loop\n`;
       stlText += `      vertex ${shape.position.x} ${shape.position.y} ${shape.position.z}\n`;
@@ -257,448 +247,363 @@ export default function Home() {
       stlText += `    endloop\n`;
       stlText += `  endfacet\n`;
     });
-    
-    stlText += "endsolid opensource_stl_studio\n";
+    stlText += "endsolid academic_mesh_studio\n";
 
     const blob = new Blob([stlText], { type: "text/plain" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = `${projectName.toLowerCase().replace(/\s+/g, "-")}.stl`;
+    link.download = `${projectName.toLowerCase().replace(/\s+/g, "_")}.stl`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    showToast("Downloaded ASCII STL representation", "success");
+    showToast("STL_EXPORT_COMPLETED", "success");
   };
+
+  // Shared application header
+  const renderWorkspaceHeader = (showBackToDashboard = true) => (
+    <header className="flex items-center justify-between px-5 py-3 border-b border-zinc-800 bg-zinc-950 text-zinc-100 font-mono text-xs flex-shrink-0">
+      <div className="flex items-center gap-4">
+        {showBackToDashboard && (
+          <button
+            onClick={() => setActiveView("dashboard")}
+            className="flex items-center gap-1.5 px-2.5 py-1 bg-zinc-900 border border-zinc-800 rounded text-[11px] text-zinc-300 hover:bg-zinc-800 transition"
+          >
+            <ArrowLeft className="w-3.5 h-3.5" />
+            <span>DASHBOARD</span>
+          </button>
+        )}
+        <div className="flex items-center gap-2">
+          <span className="font-bold tracking-wider text-white">METROLOGY_LAB //</span>
+          <input
+            type="text"
+            value={projectName}
+            onChange={(e) => setProjectName(e.target.value)}
+            className="bg-black border border-zinc-800 rounded px-2 py-0.5 text-zinc-300 focus:outline-none focus:border-zinc-500 w-44 font-mono text-[11px]"
+            title="Project Identifier"
+          />
+        </div>
+      </div>
+
+      <div className="flex items-center gap-2">
+        <button
+          onClick={() => setIsProjectManagerOpen(true)}
+          className="px-2.5 py-1 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 border border-zinc-800 rounded text-[11px] flex items-center gap-1.5 transition"
+        >
+          <FolderOpen className="w-3.5 h-3.5" />
+          <span>Load</span>
+        </button>
+
+        <button
+          onClick={handleSaveProject}
+          className="px-2.5 py-1 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 border border-zinc-800 rounded text-[11px] flex items-center gap-1.5 transition"
+        >
+          <Database className="w-3.5 h-3.5 text-zinc-400" />
+          <span>Save Matrix</span>
+        </button>
+
+        <button
+          onClick={handleExportSTL}
+          className="px-2.5 py-1 bg-zinc-100 hover:bg-zinc-200 text-zinc-950 font-medium rounded text-[11px] flex items-center gap-1.5 transition"
+        >
+          <Download className="w-3.5 h-3.5" />
+          <span>Compile STL</span>
+        </button>
+
+        <div className="h-4 w-px bg-zinc-800 mx-1" />
+
+        {user ? (
+          <button
+            onClick={() => setIsAuthOpen(true)}
+            className="flex items-center gap-1.5 px-2.5 py-1 bg-zinc-900/60 border border-zinc-800 rounded text-[11px] text-zinc-400"
+          >
+            <UserIcon className="w-3 h-3 text-zinc-400" />
+            <span>CLOUD_SYNC: ON</span>
+          </button>
+        ) : (
+          <button
+            onClick={() => setIsAuthOpen(true)}
+            className="flex items-center gap-1.5 px-2.5 py-1 bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white rounded text-[11px] transition"
+          >
+            <UserIcon className="w-3 h-3" />
+            <span>Link Server</span>
+          </button>
+        )}
+      </div>
+    </header>
+  );
+
+  const renderToast = () => toast && (
+    <div className="fixed bottom-4 right-4 z-50 font-mono text-[11px]">
+      <div className={`px-3 py-2 border flex items-center gap-2 bg-black shadow-lg ${
+        toast.type === "success" ? "border-emerald-800 text-emerald-400" :
+        toast.type === "error" ? "border-rose-800 text-rose-400" : "border-zinc-700 text-zinc-400"
+      }`}>
+        <Terminal className="w-3.5 h-3.5 flex-shrink-0" />
+        <span>[{toast.message}]</span>
+      </div>
+    </div>
+  );
 
   if (activeView === "stl-viewer") {
     return (
-      <div className="w-full h-screen overflow-hidden bg-[#050811] text-slate-100 font-sans relative">
-        <StlViewerSection
-          onBack={() => setActiveView("home")}
-          showToast={showToast}
-        />
-        {/* Floating Status Notification (Toast) */}
-        {toast && (
-          <div className="fixed bottom-6 right-6 z-50 animate-bounce">
-            <div
-              className={`px-4 py-3 rounded-2xl border shadow-2xl flex items-center gap-2.5 text-xs font-sans font-medium ${
-                toast.type === "success"
-                  ? "bg-emerald-950/90 border-emerald-800 text-emerald-300"
-                  : toast.type === "error"
-                  ? "bg-rose-950/90 border-rose-800 text-rose-300"
-                  : "bg-slate-900/90 border-slate-800 text-slate-300"
-              }`}
-            >
-              <ShieldCheck className="w-4 h-4 flex-shrink-0" />
-              <span>{toast.message}</span>
-            </div>
-          </div>
-        )}
+      <div className="w-full h-screen overflow-hidden bg-black text-zinc-100 font-mono relative flex flex-col">
+        {renderWorkspaceHeader()}
+        <div className="flex-1 min-h-0 bg-zinc-950">
+          <StlViewerSection onBack={() => setActiveView("dashboard")} showToast={showToast} />
+        </div>
+        {renderToast()}
       </div>
     );
   }
 
   if (activeView === "pic-scanner") {
     return (
-      <div className="w-full h-screen overflow-hidden bg-[#050811] text-slate-100 font-sans relative">
-        <PicScannerSection
-          onBack={() => setActiveView("home")}
-          showToast={showToast}
-          onSendToPlayground={handleSendToPlayground}
-        />
-        {/* Floating Status Notification (Toast) */}
-        {toast && (
-          <div className="fixed bottom-6 right-6 z-50 animate-bounce">
-            <div
-              className={`px-4 py-3 rounded-2xl border shadow-2xl flex items-center gap-2.5 text-xs font-sans font-medium ${
-                toast.type === "success"
-                  ? "bg-emerald-950/90 border-emerald-800 text-emerald-300"
-                  : toast.type === "error"
-                  ? "bg-rose-950/90 border-rose-800 text-rose-300"
-                  : "bg-slate-900/90 border-slate-800 text-slate-300"
-              }`}
-            >
-              <ShieldCheck className="w-4 h-4 flex-shrink-0" />
-              <span>{toast.message}</span>
-            </div>
-          </div>
-        )}
+      <div className="w-full h-screen overflow-hidden bg-black text-zinc-100 font-mono relative flex flex-col">
+        {renderWorkspaceHeader()}
+        <div className="flex-1 min-h-0 bg-zinc-950">
+          <PicScannerSection
+            onBack={() => setActiveView("dashboard")}
+            showToast={showToast}
+            onSendToPlayground={handleSendToPlayground}
+          />
+        </div>
+        {renderToast()}
       </div>
     );
   }
 
-  if (activeView === "home") {
+  if (activeView === "dashboard") {
     return (
-      <div className="flex flex-col min-h-screen bg-[#040812] text-slate-100 font-sans relative overflow-hidden selection:bg-sky-500/30 selection:text-white h-screen">
-        {/* Glow Effects */}
-        <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-sky-500/5 rounded-full blur-[120px] pointer-events-none" />
-        <div className="absolute bottom-10 right-1/4 w-[600px] h-[600px] bg-indigo-500/5 rounded-full blur-[150px] pointer-events-none" />
-
-        {/* Global Nav for Home */}
-        <header className="flex items-center justify-between px-8 py-5 border-b border-slate-900 bg-[#070b16]/60 backdrop-blur-md z-10 flex-shrink-0">
-          <div className="flex items-center gap-2.5">
-            <div className="bg-slate-900 p-2 rounded-xl text-sky-400 border border-slate-800">
-              <Box className="w-4.5 h-4.5" />
+      <div className="flex flex-col h-screen bg-black text-zinc-200 font-mono selection:bg-zinc-800 relative overflow-hidden">
+        
+        {/* Core Project Header */}
+        <header className="flex items-center justify-between px-6 py-4 border-b border-zinc-800 bg-zinc-950">
+          <div className="flex items-center gap-3">
+            <div className="p-1.5 border border-zinc-800 text-zinc-300 bg-black">
+              <Code className="w-4 h-4" />
             </div>
             <div>
-              <h1 className="font-sans font-extrabold text-xs tracking-wider text-white uppercase">
-                3D CAD Studio &amp; Metrology
+              <h1 className="text-xs font-bold uppercase tracking-widest text-white">
+                Computational Metrology &amp; Solid Modeling Suite
               </h1>
-              <p className="text-[10px] text-slate-500 font-mono">
-                Solid Modeling &bull; Photogrammetry Reconstructor
+              <p className="text-[10px] text-zinc-500">
+                Advanced Undergrad Thesis / Systems Architecture Sandbox
               </p>
             </div>
           </div>
-
-          <div className="flex items-center gap-3">
-            {user ? (
-              <button
-                onClick={() => setIsAuthOpen(true)}
-                className="flex items-center gap-2 px-3.5 py-1.5 bg-emerald-950/30 border border-emerald-900/40 rounded-xl text-xs font-semibold text-emerald-300 hover:bg-emerald-950/50 transition cursor-pointer"
-              >
-                {user.photoURL ? (
-                  <img src={user.photoURL} alt="Avatar" className="w-4.5 h-4.5 rounded-full" />
-                ) : (
-                  <UserIcon className="w-3.5 h-3.5 text-emerald-400" />
-                )}
-                <span>Cloud Vault Sync: Active</span>
-              </button>
-            ) : (
-              <button
-                onClick={() => setIsAuthOpen(true)}
-                className="flex items-center gap-1.5 px-3.5 py-1.5 bg-indigo-950/30 border border-indigo-900/40 rounded-xl text-xs font-semibold text-indigo-300 hover:bg-indigo-950/50 transition cursor-pointer"
-              >
-                <UserIcon className="w-3.5 h-3.5 text-indigo-400" />
-                <span>Sign In to Vault</span>
-              </button>
-            )}
+          <div className="text-[10px] text-zinc-500 text-right">
+            <span>STATUS // COMPILER_STABLE</span>
           </div>
         </header>
 
-        {/* Home Main Splash Screen */}
-        <main className="flex-1 flex flex-col items-center justify-center p-8 max-w-5xl mx-auto z-10">
-          {/* Welcome Badge */}
-          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-slate-900 border border-slate-800 rounded-lg mb-6">
-            <span className="text-[10px] font-mono text-slate-400 uppercase tracking-wider font-semibold">
-              v2.4 Stable Release
-            </span>
-          </div>
-
-          {/* Hero Section */}
-          <div className="text-center max-w-2xl mb-12">
-            <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-white mb-4">
-              Inspect, Model, and Synthesize 3D Assets
+        {/* Central Dashboard Matrix */}
+        <main className="flex-1 max-w-5xl w-full mx-auto p-6 flex flex-col justify-center">
+          
+          <div className="mb-8 border-l-2 border-zinc-700 pl-4">
+            <h2 className="text-sm font-bold text-white uppercase tracking-wider mb-1">
+              Select Experimental Application Module
             </h2>
-            <p className="text-sm text-slate-400 leading-relaxed">
-              An engineering-grade constructive solid geometry modeler, optical triangulation scan simulator, and client-side STL geometry analyzer.
+            <p className="text-xs text-zinc-500 max-w-xl">
+              Analytical execution interface for CSG constructive solid geometry compilation, geometric triangulation diagnostics, and cloud-vault mesh snapshots.
             </p>
           </div>
 
-          {/* Core Navigation Cards Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-4xl">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 w-full">
             
-            {/* Card 1: STL File Importer */}
+            {/* Module 1 */}
             <div
               onClick={() => setActiveView("stl-viewer")}
-              className="bg-slate-900/40 hover:bg-slate-900/80 border border-slate-850 hover:border-slate-800 rounded-2xl p-6 flex flex-col justify-between cursor-pointer transition transform hover:scale-[1.01] hover:shadow-xl group text-left h-[260px]"
+              className="border border-zinc-800 bg-zinc-950/40 p-5 flex flex-col justify-between hover:border-zinc-500 hover:bg-zinc-950 transition cursor-pointer group"
             >
               <div>
-                <div className="w-10 h-10 bg-slate-950 rounded-xl flex items-center justify-center border border-slate-850 group-hover:border-slate-800 transition mb-4">
-                  <Upload className="w-4.5 h-4.5 text-slate-400" />
+                <div className="w-8 h-8 border border-zinc-800 flex items-center justify-center bg-black mb-4 text-zinc-400 group-hover:text-white transition">
+                  <Upload className="w-4 h-4" />
                 </div>
-                <h3 className="text-sm font-bold text-white mb-2 group-hover:text-sky-400 transition">
-                  STL Importer &amp; Analyzer
+                <h3 className="text-xs font-bold text-white mb-2 uppercase tracking-wide">
+                  01 // STL Data Analysis
                 </h3>
-                <p className="text-xs text-slate-400 leading-relaxed">
-                  Upload an existing `.stl` model to measure dimensions, calculate total face counts, and compute exact volumetric displacement.
+                <p className="text-[11px] text-zinc-400 leading-relaxed">
+                  Parse local stereolithography headers. Extract dimensional matrix maps, computational polygon density tracking, and calculate spatial displacement boundaries.
                 </p>
               </div>
-              <span className="text-[10px] font-mono text-slate-500 tracking-wider font-semibold mt-4 block">
-                INSPECT LOCAL STL &rarr;
+              <span className="text-[10px] font-bold text-zinc-600 group-hover:text-zinc-300 tracking-wider mt-4">
+                EXECUTE_PARSER &rarr;
               </span>
             </div>
 
-            {/* Card 2: 3D CAD Playground */}
+            {/* Module 2 */}
             <div
-              onClick={() => setActiveView("playground")}
-              className="bg-slate-900/40 hover:bg-slate-900/80 border border-slate-850 hover:border-slate-800 rounded-2xl p-6 flex flex-col justify-between cursor-pointer transition transform hover:scale-[1.01] hover:shadow-xl group text-left h-[260px]"
+              onClick={() => setActiveView("workspace")}
+              className="border border-zinc-800 bg-zinc-950/40 p-5 flex flex-col justify-between hover:border-zinc-500 hover:bg-zinc-950 transition cursor-pointer group"
             >
               <div>
-                <div className="w-10 h-10 bg-slate-950 rounded-xl flex items-center justify-center border border-slate-850 group-hover:border-slate-800 transition mb-4">
-                  <Wrench className="w-4.5 h-4.5 text-slate-400" />
+                <div className="w-8 h-8 border border-zinc-800 flex items-center justify-center bg-black mb-4 text-zinc-400 group-hover:text-white transition">
+                  <Wrench className="w-4 h-4" />
                 </div>
-                <h3 className="text-sm font-bold text-white mb-2 group-hover:text-indigo-400 transition">
-                  3D CAD Solid Playground
+                <h3 className="text-xs font-bold text-white mb-2 uppercase tracking-wide">
+                  02 // Constructive Solid Geometry Workspace
                 </h3>
-                <p className="text-xs text-slate-400 leading-relaxed">
-                  Model and design complex structures with intersecting, subtracting, and merging 3D primitives. Sync seamlessly with Cloud Vault.
+                <p className="text-[11px] text-zinc-400 leading-relaxed">
+                  Synthesize complex coordinate bounds. Features geometric Boolean intersections (Merge, Subtract) utilizing localized spatial layer structures.
                 </p>
               </div>
-              <span className="text-[10px] font-mono text-slate-500 tracking-wider font-semibold mt-4 block">
-                OPEN CAD WORKSPACE &rarr;
+              <span className="text-[10px] font-bold text-zinc-600 group-hover:text-zinc-300 tracking-wider mt-4">
+                INITIALIZE_WORKSPACE &rarr;
               </span>
             </div>
 
-            {/* Card 3: Photo Scanner */}
+            {/* Module 3 */}
             <div
               onClick={() => setActiveView("pic-scanner")}
-              className="bg-slate-900/40 hover:bg-slate-900/80 border border-slate-850 hover:border-slate-800 rounded-2xl p-6 flex flex-col justify-between cursor-pointer transition transform hover:scale-[1.01] hover:shadow-xl group text-left h-[260px]"
+              className="border border-zinc-800 bg-zinc-950/40 p-5 flex flex-col justify-between hover:border-zinc-500 hover:bg-zinc-950 transition cursor-pointer group"
             >
               <div>
-                <div className="w-10 h-10 bg-slate-950 rounded-xl flex items-center justify-center border border-slate-850 group-hover:border-slate-800 transition mb-4">
-                  <Camera className="w-4.5 h-4.5 text-slate-400" />
+                <div className="w-8 h-8 border border-zinc-800 flex items-center justify-center bg-black mb-4 text-zinc-400 group-hover:text-white transition">
+                  <Camera className="w-4 h-4" />
                 </div>
-                <h3 className="text-sm font-bold text-white mb-2 group-hover:text-pink-400 transition">
-                  Pic-to-3D Photo Scanner
+                <h3 className="text-xs font-bold text-white mb-2 uppercase tracking-wide">
+                  03 // Triangulation Photogrammetry
                 </h3>
-                <p className="text-xs text-slate-400 leading-relaxed">
-                  Upload multiple physical photographs of an object to run progressive keypoint extraction, point-cloud alignment, and mesh generation.
+                <p className="text-[11px] text-zinc-400 leading-relaxed">
+                  Simulate point-cloud alignment routines from physical photographic orientations. Maps dynamic vertices into linear vertex clouds.
                 </p>
               </div>
-              <span className="text-[10px] font-mono text-slate-500 tracking-wider font-semibold mt-4 block">
-                START RECONSTRUCTION &rarr;
+              <span className="text-[10px] font-bold text-zinc-600 group-hover:text-zinc-300 tracking-wider mt-4">
+                RUN_RECONSTRUCTOR &rarr;
               </span>
             </div>
 
           </div>
         </main>
 
-        {/* Simple professional footer */}
-        <footer className="py-6 text-center border-t border-slate-900 bg-[#03060c] text-[10px] font-mono text-slate-600 flex-shrink-0 flex items-center justify-center gap-6">
-          <span>&copy; OPENSOURCE STL SCANNERS INC.</span>
-          <span>&bull;</span>
-          <span>100% PRIVATE DATA BOUNDARY</span>
-          <span>&bull;</span>
-          <span>FIREBASE SECURED INTEGRITY</span>
+        {/* Informative Grid Footer */}
+        <footer className="p-4 border-t border-zinc-800 bg-zinc-950 text-[10px] text-zinc-600 flex justify-between items-center px-6">
+          <div className="flex gap-4">
+            <span>SYS_BOUND: PRIVATE_LOCAL_HOST</span>
+            <span>DATA_INTEGRITY: FIREBASE_CLOUD</span>
+          </div>
+          <span>ACADEMIC EVALUATION DESIGN // © 2026</span>
         </footer>
 
-        {/* Secure Sign In Modal Overlay */}
         <AuthModal isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} user={user} />
       </div>
     );
   }
 
+  // Engineering Studio/Workspace View
   return (
-    <div className="flex flex-col h-screen overflow-hidden bg-slate-950 text-slate-100">
-      {/* Top Header Navigation */}
-      <header className="flex items-center justify-between px-6 py-3 border-b border-slate-900 bg-slate-900/40 backdrop-blur-md z-10 flex-shrink-0">
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => setActiveView("home")}
-            className="p-1.5 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-white border border-slate-800 text-xs font-mono transition cursor-pointer flex items-center gap-1.5"
-          >
-            <ArrowLeft className="w-3.5 h-3.5" />
-            <span>HOME</span>
-          </button>
-          <div className="h-6 w-px bg-slate-800" />
-          <div className="flex items-center gap-2">
-            <div className="bg-slate-900 border border-slate-800 p-1.5 rounded-lg text-indigo-400">
-              <Box className="w-4 h-4" />
-            </div>
-            <div>
-              <h1 className="font-sans font-extrabold text-xs tracking-tight text-white flex items-center gap-1.5">
-                Solid Modeler
-              </h1>
-              <p className="text-[9px] text-slate-500 font-mono uppercase">
-                Constructive Solid Geometry Workspace
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* Global Toolbar */}
-        <div className="flex items-center gap-2">
-          {/* Active CAD project title input */}
-          <input
-            type="text"
-            value={projectName}
-            onChange={(e) => setProjectName(e.target.value)}
-            className="bg-slate-950 border border-slate-800 rounded-lg px-3 py-1 text-xs text-slate-200 focus:outline-none focus:ring-1 focus:ring-sky-500 font-sans font-medium w-48 text-center"
-            title="Project Name"
-          />
-
-          <button
-            onClick={() => setIsProjectManagerOpen(true)}
-            className="p-1.5 bg-slate-900 hover:bg-slate-850 text-slate-300 border border-slate-800 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer"
-          >
-            <FolderOpen className="w-3.5 h-3.5" />
-            <span>Load</span>
-          </button>
-
-          <button
-            onClick={handleSaveProject}
-            className="p-1.5 bg-slate-900 hover:bg-slate-850 text-slate-300 border border-slate-800 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer"
-          >
-            <Database className="w-3.5 h-3.5 text-sky-400" />
-            <span>Save</span>
-          </button>
-
-          <button
-            onClick={handleExportSTL}
-            className="p-1.5 bg-sky-600 hover:bg-sky-500 text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer shadow-md shadow-sky-500/10"
-          >
-            <Download className="w-3.5 h-3.5" />
-            <span>Export STL</span>
-          </button>
-
-          <div className="h-6 w-px bg-slate-800 mx-1" />
-
-          {/* User Sign In Status */}
-          {user ? (
-            <button
-              onClick={() => setIsAuthOpen(true)}
-              className="flex items-center gap-2 px-2.5 py-1.5 bg-emerald-950/40 border border-emerald-900/50 hover:bg-emerald-950/60 rounded-xl text-xs font-semibold text-emerald-300 transition cursor-pointer"
-            >
-              {user.photoURL ? (
-                <img src={user.photoURL} alt="Avatar" className="w-4 h-4 rounded-full" />
-              ) : (
-                <UserIcon className="w-3.5 h-3.5 text-emerald-400" />
-              )}
-              <span>Cloud Vault Connected</span>
-            </button>
-          ) : (
-            <button
-              onClick={() => setIsAuthOpen(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-950/40 border border-indigo-900/50 hover:bg-indigo-950/60 rounded-xl text-xs font-semibold text-indigo-300 transition cursor-pointer"
-            >
-              <UserIcon className="w-3.5 h-3.5 text-indigo-400" />
-              <span>Sign In</span>
-            </button>
-          )}
-        </div>
-      </header>
+    <div className="flex flex-col h-screen overflow-hidden bg-black text-zinc-200 font-mono">
+      {renderWorkspaceHeader(true)}
 
       {/* Main Studio Area */}
-      <main className="flex-1 flex overflow-hidden">
-        {/* Left Control Rail (Scene Hierarchy & Shapes List) */}
-        <div className="w-80 bg-slate-950 border-r border-slate-900 p-4 flex flex-col gap-4 overflow-y-auto flex-shrink-0">
+      <main className="flex-1 flex overflow-hidden min-h-0">
+        
+        {/* Left Side Controller Rail */}
+        <div className="w-72 bg-zinc-950 border-r border-zinc-800 p-4 flex flex-col gap-5 overflow-y-auto flex-shrink-0 text-[11px]">
           
-          {/* Primitive Creation Panel */}
+          {/* Node Creation Panel */}
           <div className="space-y-2">
-            <h3 className="text-[10px] text-slate-500 font-mono tracking-widest uppercase">
-              CREATE SHAPE PRIMITIVE
+            <h3 className="text-[10px] text-zinc-500 font-bold tracking-wider uppercase">
+              // INITIALIZE_GEOMETRY_NODE
             </h3>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-1 gap-1">
               <button
                 onClick={() => handleAddShape("box")}
-                className="flex items-center gap-2 px-3 py-2 bg-slate-900 hover:bg-slate-850 border border-slate-800 hover:border-slate-700 rounded-xl text-xs font-medium text-slate-200 transition cursor-pointer"
+                className="flex items-center justify-between px-3 py-1.5 bg-black hover:bg-zinc-900 border border-zinc-800 rounded text-zinc-300 transition text-left"
               >
-                <Box className="w-4 h-4 text-sky-400" />
-                <span>Box block</span>
+                <span>+ ADD_PRIMITIVE_BOX</span>
+                <Box className="w-3.5 h-3.5 text-zinc-500" />
               </button>
               <button
                 onClick={() => handleAddShape("cylinder")}
-                className="flex items-center gap-2 px-3 py-2 bg-slate-900 hover:bg-slate-850 border border-slate-800 hover:border-slate-700 rounded-xl text-xs font-medium text-slate-200 transition cursor-pointer"
+                className="flex items-center justify-between px-3 py-1.5 bg-black hover:bg-zinc-900 border border-zinc-800 rounded text-zinc-300 transition text-left"
               >
-                <Circle className="w-4 h-4 text-indigo-400" />
-                <span>Cylinder</span>
+                <span>+ ADD_PRIMITIVE_CYLINDER</span>
+                <Circle className="w-3.5 h-3.5 text-zinc-500" />
               </button>
               <button
                 onClick={() => handleAddShape("sphere")}
-                className="flex items-center gap-2 px-3 py-2 bg-slate-900 hover:bg-slate-850 border border-slate-800 hover:border-slate-700 rounded-xl text-xs font-medium text-slate-200 transition cursor-pointer"
+                className="flex items-center justify-between px-3 py-1.5 bg-black hover:bg-zinc-900 border border-zinc-800 rounded text-zinc-300 transition text-left"
               >
-                <Circle className="w-4 h-4 text-purple-400" />
-                <span>Sphere</span>
+                <span>+ ADD_PRIMITIVE_SPHERE</span>
+                <Circle className="w-3.5 h-3.5 text-zinc-500" />
               </button>
               <button
                 onClick={() => handleAddShape("cone")}
-                className="flex items-center gap-2 px-3 py-2 bg-slate-900 hover:bg-slate-850 border border-slate-800 hover:border-slate-700 rounded-xl text-xs font-medium text-slate-200 transition cursor-pointer"
+                className="flex items-center justify-between px-3 py-1.5 bg-black hover:bg-zinc-900 border border-zinc-800 rounded text-zinc-300 transition text-left"
               >
-                <Layers className="w-4 h-4 text-rose-400" />
-                <span>Cone</span>
+                <span>+ ADD_PRIMITIVE_CONE</span>
+                <Layers className="w-3.5 h-3.5 text-zinc-500" />
               </button>
               <button
                 onClick={() => handleAddShape("torus")}
-                className="flex items-center gap-2 px-3 py-2 bg-slate-900 hover:bg-slate-850 border border-slate-800 hover:border-slate-700 rounded-xl text-xs font-medium text-slate-200 transition cursor-pointer"
+                className="flex items-center justify-between px-3 py-1.5 bg-black hover:bg-zinc-900 border border-zinc-800 rounded text-zinc-300 transition text-left"
               >
-                <Circle className="w-4 h-4 text-amber-400 animate-spin-slow" />
-                <span>Torus Ring</span>
+                <span>+ ADD_PRIMITIVE_TORUS</span>
+                <Circle className="w-3.5 h-3.5 text-zinc-500" />
               </button>
             </div>
           </div>
 
-          {/* View Options Toggle Panel */}
-          <div className="space-y-2 bg-slate-900/30 border border-slate-900 p-3 rounded-xl">
-            <h3 className="text-[10px] text-slate-500 font-mono tracking-widest uppercase">
-              STUDIO VIEWPORT OPTIONS
+          {/* Rendering Options Toggle Panel */}
+          <div className="space-y-2 bg-black border border-zinc-800 p-3 rounded">
+            <h3 className="text-[10px] text-zinc-500 font-bold tracking-wider uppercase">
+              // VIEWPORT_DIAGNOSTICS
             </h3>
-            <div className="flex flex-col gap-2">
-              <label className="flex items-center justify-between text-xs cursor-pointer select-none">
-                <span className="text-slate-300 font-medium">Show Primitive Outline</span>
-                <button
-                  onClick={() => setShowPrimitives(!showPrimitives)}
-                  className="text-slate-400 hover:text-white transition"
-                >
-                  {showPrimitives ? (
-                    <ToggleRight className="w-7 h-7 text-sky-400" />
-                  ) : (
-                    <ToggleLeft className="w-7 h-7 text-slate-600" />
-                  )}
+            <div className="flex flex-col gap-2.5">
+              <div className="flex items-center justify-between">
+                <span className="text-zinc-400">Primitive Outlines</span>
+                <button onClick={() => setShowPrimitives(!showPrimitives)} className="text-zinc-400 hover:text-white transition">
+                  {showPrimitives ? <ToggleRight className="w-6 h-6 text-white" /> : <ToggleLeft className="w-6 h-6 text-zinc-700" />}
                 </button>
-              </label>
+              </div>
 
-              <label className="flex items-center justify-between text-xs cursor-pointer select-none">
-                <span className="text-slate-300 font-medium">Render Wireframe Grid</span>
-                <button
-                  onClick={() => setShowWireframe(!showWireframe)}
-                  className="text-slate-400 hover:text-white transition"
-                >
-                  {showWireframe ? (
-                    <ToggleRight className="w-7 h-7 text-indigo-400" />
-                  ) : (
-                    <ToggleLeft className="w-7 h-7 text-slate-600" />
-                  )}
+              <div className="flex items-center justify-between">
+                <span className="text-zinc-400">Wireframe Mesh Grid</span>
+                <button onClick={() => setShowWireframe(!showWireframe)} className="text-zinc-400 hover:text-white transition">
+                  {showWireframe ? <ToggleRight className="w-6 h-6 text-white" /> : <ToggleLeft className="w-6 h-6 text-zinc-700" />}
                 </button>
-              </label>
+              </div>
             </div>
           </div>
 
-          {/* Scene Hierarchy */}
+          {/* Scene Pipeline / Hierarchy Tree */}
           <div className="flex-1 flex flex-col min-h-0 space-y-2">
             <div className="flex items-center justify-between">
-              <h3 className="text-[10px] text-slate-500 font-mono tracking-widest uppercase">
-                ACTIVE SCENE OBJECTS ({shapes.length})
+              <h3 className="text-[10px] text-zinc-500 font-bold tracking-wider uppercase">
+                // NODE_PIPELINE ({shapes.length})
               </h3>
               {shapes.length > 0 && (
-                <button
-                  onClick={startNewProject}
-                  className="text-[10px] font-mono text-rose-400 hover:text-rose-300 transition cursor-pointer"
-                >
-                  Clear All
+                <button onClick={startNewProject} className="text-[10px] text-rose-400 hover:underline">
+                  [RESET_TREE]
                 </button>
               )}
             </div>
 
-            <div className="flex-1 overflow-y-auto space-y-1.5 bg-slate-900/20 border border-slate-900 rounded-2xl p-2.5">
+            <div className="flex-1 overflow-y-auto space-y-1 p-1 bg-black border border-zinc-800 rounded">
               {shapes.length === 0 ? (
-                <div className="flex flex-col items-center justify-center h-full text-center p-4">
-                  <Wrench className="w-6 h-6 text-slate-600 mb-1" />
-                  <p className="text-xs text-slate-400">Empty Scene Canvas</p>
-                  <p className="text-[10px] text-slate-500 mt-0.5">
-                    Add primitive blocks above or execute laser scan.
-                  </p>
+                <div className="text-center py-8 text-zinc-600">
+                  <Activity className="w-4 h-4 mx-auto mb-1.5 text-zinc-700" />
+                  <p>NO_ACTIVE_NODES</p>
                 </div>
               ) : (
                 shapes.map((shape) => (
                   <div
                     key={shape.id}
                     onClick={() => setSelectedShapeId(shape.id)}
-                    className={`flex items-center justify-between p-2 rounded-xl border transition cursor-pointer group ${
+                    className={`flex items-center justify-between p-2 rounded border transition cursor-pointer group ${
                       shape.id === selectedShapeId
-                        ? "bg-slate-900 border-sky-500/40 shadow-md shadow-sky-500/5"
-                        : "bg-slate-950/40 border-slate-900 hover:bg-slate-900/60 hover:border-slate-800"
+                        ? "bg-zinc-900 border-zinc-500"
+                        : "bg-transparent border-zinc-900 hover:border-zinc-800"
                     }`}
                   >
-                    <div className="flex items-center gap-2.5 min-w-0">
-                      <div
-                        className="w-2.5 h-2.5 rounded-full flex-shrink-0"
-                        style={{ backgroundColor: shape.color }}
-                      />
+                    <div className="flex items-center gap-2 min-w-0">
+                      <div className="w-1.5 h-1.5 rounded-none flex-shrink-0" style={{ backgroundColor: shape.color }} />
                       <div className="min-w-0">
-                        <p className="text-xs font-semibold text-slate-200 truncate">{shape.name}</p>
-                        <p className="text-[9px] text-slate-500 font-mono uppercase">
-                          {shape.type} &bull; {shape.operation}
+                        <p className="font-bold text-zinc-200 truncate">{shape.name}</p>
+                        <p className="text-[9px] text-zinc-500 uppercase">
+                          {shape.type} // {shape.operation}
                         </p>
                       </div>
                     </div>
@@ -708,7 +613,7 @@ export default function Home() {
                         e.stopPropagation();
                         handleDeleteShape(shape.id);
                       }}
-                      className="p-1 text-slate-500 hover:text-rose-400 opacity-0 group-hover:opacity-100 transition cursor-pointer"
+                      className="p-0.5 text-zinc-600 hover:text-rose-400 opacity-0 group-hover:opacity-100 transition"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
@@ -719,8 +624,11 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Center 3D Viewport Area */}
-        <div className="flex-1 relative bg-slate-950 flex flex-col p-4">
+        {/* Central WebGL Viewport Container */}
+        <div className="flex-1 relative bg-black flex flex-col p-2">
+          <div className="absolute top-4 left-4 z-10 bg-zinc-950/80 backdrop-blur border border-zinc-800 px-2 py-1 text-[10px] text-zinc-500 rounded pointer-events-none">
+            RENDER_ENGINE: WEBGL_THREE // WIREFRAME: {showWireframe ? "ON" : "OFF"}
+          </div>
           <ThreeCanvas
             shapes={shapes}
             selectedShapeId={selectedShapeId}
@@ -731,11 +639,13 @@ export default function Home() {
           />
         </div>
 
-        {/* Right Controls Panel (Scanner Controls & Selected Shape Editor) */}
-        <div className="w-80 bg-slate-950 border-l border-slate-900 p-4 flex flex-col gap-4 overflow-y-auto flex-shrink-0">
-          <Scanner onAddScannedShape={handleAddShape} />
+        {/* Right Controls Panel (Metrology Simulator & Vector Inputs) */}
+        <div className="w-72 bg-zinc-950 border-l border-zinc-800 p-4 flex flex-col gap-4 overflow-y-auto flex-shrink-0 text-[11px]">
+          <div className="border border-zinc-800 bg-black p-3 rounded">
+            <Scanner onAddScannedShape={handleAddShape} />
+          </div>
           
-          <div className="flex-1">
+          <div className="flex-1 border border-zinc-800 bg-black p-3 rounded">
             <ShapeEditor
               shape={shapes.find((s) => s.id === selectedShapeId) || null}
               onUpdateShape={handleUpdateShape}
@@ -746,54 +656,47 @@ export default function Home() {
         </div>
       </main>
 
-      {/* Cloud Projects Manager Sidebar Overlay */}
+      {/* Cloud Snapshots Sidebar Drawer */}
       {isProjectManagerOpen && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex justify-end">
-          <div className="w-96 bg-slate-900 border-l border-slate-800 h-full p-6 flex flex-col shadow-2xl relative">
-            <div className="flex items-center justify-between pb-4 border-b border-slate-800 mb-4">
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-xs z-50 flex justify-end font-mono">
+          <div className="w-80 bg-zinc-950 border-l border-zinc-800 h-full p-5 flex flex-col shadow-xl">
+            <div className="flex items-center justify-between pb-3 border-b border-zinc-800 mb-4">
               <div className="flex items-center gap-2">
-                <FolderOpen className="w-5 h-5 text-sky-400" />
-                <h3 className="font-semibold text-sm text-slate-100">Project Cloud Vault</h3>
+                <FolderOpen className="w-4 h-4 text-zinc-400" />
+                <h3 className="font-bold text-xs text-zinc-200 uppercase tracking-wider">Project Cache Vault</h3>
               </div>
-              <button
-                onClick={() => setIsProjectManagerOpen(false)}
-                className="text-slate-400 hover:text-slate-200 transition text-xs font-mono"
-              >
-                Close
+              <button onClick={() => setIsProjectManagerOpen(false)} className="text-zinc-500 hover:text-white text-[11px]">
+                [ESC]
               </button>
             </div>
 
             {user ? (
-              <div className="flex-1 flex flex-col min-h-0 space-y-4">
-                <span className="text-[10px] text-slate-500 font-mono tracking-widest block uppercase">
-                  SAVED CAD DESIGNS ({projects.length})
+              <div className="flex-1 flex flex-col min-h-0 space-y-3">
+                <span className="text-[9px] text-zinc-500 tracking-wider block font-bold">
+                  // CACHED_MATRICES ({projects.length})
                 </span>
 
-                <div className="flex-1 overflow-y-auto space-y-2">
+                <div className="flex-1 overflow-y-auto space-y-1">
                   {projects.length === 0 ? (
-                    <div className="text-center p-6 bg-slate-950 border border-slate-850 rounded-2xl">
-                      <Database className="w-7 h-7 text-slate-600 mx-auto mb-2" />
-                      <p className="text-xs text-slate-300">No cloud records found</p>
-                      <p className="text-[10px] text-slate-500 max-w-[200px] mx-auto mt-1">
-                        Use the "Save" button in top toolbar to back up your current work.
-                      </p>
+                    <div className="text-center p-4 border border-zinc-800 rounded bg-black text-zinc-600">
+                      <p>NO_SNAPSHOTS_FOUND</p>
                     </div>
                   ) : (
                     projects.map((proj) => (
                       <div
                         key={proj.id}
                         onClick={() => handleLoadProject(proj)}
-                        className="flex items-center justify-between p-3 bg-slate-950/60 hover:bg-slate-950 border border-slate-850 hover:border-slate-800 rounded-xl cursor-pointer transition"
+                        className="flex items-center justify-between p-2 bg-black border border-zinc-900 hover:border-zinc-700 rounded cursor-pointer transition"
                       >
                         <div className="min-w-0">
-                          <p className="text-xs font-bold text-slate-200 truncate">{proj.name}</p>
-                          <p className="text-[10px] text-slate-500 font-mono">
-                            {proj.shapes?.length || 0} primitive layers
+                          <p className="font-bold text-zinc-300 truncate text-[11px]">{proj.name}</p>
+                          <p className="text-[9px] text-zinc-500">
+                            {proj.shapes?.length || 0} structures
                           </p>
                         </div>
                         <button
                           onClick={(e) => handleDeleteProject(proj.id, e)}
-                          className="p-1.5 hover:bg-slate-900 rounded-lg text-slate-400 hover:text-rose-400 transition"
+                          className="p-1 text-zinc-600 hover:text-rose-400 transition"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
@@ -803,20 +706,17 @@ export default function Home() {
                 </div>
               </div>
             ) : (
-              <div className="flex flex-col items-center justify-center text-center p-6 bg-slate-950/50 border border-slate-850 rounded-2xl">
-                <Database className="w-8 h-8 text-slate-600 mb-2" />
-                <p className="text-xs font-bold text-slate-300">Authentication Required</p>
-                <p className="text-[10px] text-slate-500 max-w-[220px] mt-1.5">
-                  Sign in with a secure Google profile to access cloud vault synchronization.
-                </p>
+              <div className="text-center p-4 border border-zinc-800 rounded bg-black text-zinc-400">
+                <p className="text-xs font-bold mb-1">AUTH_REQUIRED</p>
+                <p className="text-[10px] text-zinc-600 mb-3">Link profile matrix to load saved matrices from remote instance.</p>
                 <button
                   onClick={() => {
                     setIsProjectManagerOpen(false);
                     setIsAuthOpen(true);
                   }}
-                  className="mt-4 bg-gradient-to-r from-sky-600 to-indigo-600 text-white font-semibold text-xs py-2 px-4 rounded-xl shadow-lg hover:scale-[1.02] transition"
+                  className="w-full bg-zinc-200 hover:bg-zinc-300 text-black text-[11px] font-bold py-1.5 rounded transition"
                 >
-                  Authenticate Now
+                  LINK_SERVER
                 </button>
               </div>
             )}
@@ -824,25 +724,7 @@ export default function Home() {
         </div>
       )}
 
-      {/* Floating Status Notification (Toast) */}
-      {toast && (
-        <div className="fixed bottom-6 right-6 z-50 animate-bounce">
-          <div
-            className={`px-4 py-3 rounded-2xl border shadow-2xl flex items-center gap-2.5 text-xs font-sans font-medium ${
-              toast.type === "success"
-                ? "bg-emerald-950/90 border-emerald-800 text-emerald-300"
-                : toast.type === "error"
-                ? "bg-rose-950/90 border-rose-800 text-rose-300"
-                : "bg-slate-900/90 border-slate-800 text-slate-300"
-            }`}
-          >
-            <ShieldCheck className="w-4 h-4 flex-shrink-0" />
-            <span>{toast.message}</span>
-          </div>
-        </div>
-      )}
-
-      {/* Secure Sign In Modal Overlay */}
+      {renderToast()}
       <AuthModal isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} user={user} />
     </div>
   );
