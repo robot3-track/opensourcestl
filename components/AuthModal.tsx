@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { GoogleAuthProvider, signInWithPopup, signOut } from "firebase/auth";
 import { auth } from "../lib/firebase";
-import { LogIn, LogOut, X, Shield, Lock, CheckCircle2 } from "lucide-react";
+import { LogIn, LogOut, X, Shield, Lock, CheckCircle2, ChevronDown, ChevronRight } from "lucide-react";
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -14,6 +14,7 @@ interface AuthModalProps {
 export default function AuthModal({ isOpen, onClose, user }: AuthModalProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showSecuritySpecs, setShowSecuritySpecs] = useState(false);
 
   if (!isOpen) return null;
 
@@ -26,7 +27,7 @@ export default function AuthModal({ isOpen, onClose, user }: AuthModalProps) {
       onClose();
     } catch (err: any) {
       console.error("Google Auth Error:", err);
-      setError(err.message || "Failed to authenticate. Please try again.");
+      setError(err.message || "Authentication transmission failure.");
     } finally {
       setLoading(false);
     }
@@ -38,97 +39,114 @@ export default function AuthModal({ isOpen, onClose, user }: AuthModalProps) {
       await signOut(auth);
       onClose();
     } catch (err: any) {
-      setError("Failed to sign out.");
+      setError("Sign out command execution failed.");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-      <div className="relative w-full max-w-lg bg-slate-900 border border-slate-800 rounded-sm p-8 shadow-2xl">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 font-mono select-none">
+      <div className="relative w-full max-w-sm bg-[#080d19] border border-slate-900 rounded-sm p-5 shadow-2xl text-slate-100">
         
-        {/* Close Button */}
+        {/* Close Command */}
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 text-slate-400 hover:text-slate-100 transition cursor-pointer p-2"
+          className="absolute top-3 right-3 text-slate-500 hover:text-slate-200 transition cursor-pointer"
+          title="Close Overlay"
         >
-          <X className="w-5 h-5" />
+          <X className="w-4 h-4" />
         </button>
 
-        {/* Header */}
-        <div className="flex flex-col items-center text-center mt-2 mb-8">
-          <div className="w-12 h-12 bg-slate-800 border border-slate-700 rounded-sm flex items-center justify-center mb-4">
-            <Lock className="w-6 h-6 text-sky-400" />
+        {/* Header Block */}
+        <div className="flex items-start gap-3 pb-4 border-b border-slate-900 mb-4">
+          <div className="w-8 h-8 bg-[#050811] border border-slate-800 rounded-sm flex items-center justify-center flex-shrink-0">
+            <Lock className="w-4 h-4 text-sky-500" />
           </div>
-          <h3 className="text-xl font-bold text-slate-100 font-sans">
-            {user ? "Cloud Vault Active" : "Sign In to the Cloud"}
-          </h3>
-          <p className="text-sm text-slate-400 mt-2 max-w-sm">
-            {user
-              ? "You are securely authenticated. Your 3D models are safe."
-              : "Enable real-time synchronization, project versioning, and secure backups."}
-          </p>
+          <div>
+            <h3 className="text-xs font-bold text-slate-200 uppercase tracking-wider">
+              {user ? "SESSION_ACTIVE" : "AUTHENTICATION_REQUIRED"}
+            </h3>
+            <p className="text-[10px] text-slate-500 mt-0.5 uppercase tracking-tight">
+              {user ? "Cloud token validated successfully" : "Establish secure identity verification"}
+            </p>
+          </div>
         </div>
 
-        {/* User Stats/Status */}
+        {/* Dynamic State Management Interface */}
         {user ? (
-          <div className="space-y-6">
-            <div className="bg-slate-950 border border-slate-800 p-5 rounded-sm flex items-center gap-4">
+          <div className="space-y-3">
+            <div className="bg-[#050811] border border-slate-900 p-3 rounded-sm flex items-center gap-3">
               {user.photoURL ? (
                 <img
                   src={user.photoURL}
-                  alt={user.displayName || "User Avatar"}
-                  className="w-12 h-12 rounded-sm border border-slate-700"
+                  alt={user.displayName || "Operator"}
+                  className="w-8 h-8 rounded-sm border border-slate-800 grayscale contrast-125"
                 />
               ) : (
-                <div className="w-12 h-12 bg-slate-800 text-sky-400 flex items-center justify-center rounded-sm font-bold text-lg">
+                <div className="w-8 h-8 bg-slate-900 text-slate-400 flex items-center justify-center rounded-sm text-xs font-bold border border-slate-800">
                   {user.displayName?.charAt(0) || "U"}
                 </div>
               )}
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-slate-200 truncate">
-                  {user.displayName || "Studio Creator"}
+                <p className="text-xs font-bold text-slate-300 truncate uppercase">
+                  {user.displayName || "OPERATOR_DEFAULT"}
                 </p>
-                <p className="text-xs text-slate-400 font-mono truncate mt-1">
+                <p className="text-[9px] text-slate-500 truncate lowercase">
                   {user.email}
                 </p>
               </div>
-              <CheckCircle2 className="w-6 h-6 text-emerald-400 flex-shrink-0" />
+              <CheckCircle2 className="w-4 h-4 text-emerald-500 flex-shrink-0" />
             </div>
 
             <button
               onClick={handleSignOut}
               disabled={loading}
-              className="w-full bg-slate-950 hover:bg-slate-800 border border-slate-800 text-slate-300 hover:text-slate-100 font-sans text-sm py-3 px-4 rounded-sm transition flex items-center justify-center gap-2 cursor-pointer"
+              className="w-full bg-[#050811] hover:bg-slate-900 border border-slate-800 hover:border-slate-700 text-slate-400 hover:text-rose-400 font-bold text-[10px] uppercase py-2 px-3 rounded-sm transition flex items-center justify-center gap-2 cursor-pointer"
             >
-              <LogOut className="w-4 h-4 text-rose-400" />
-              Sign Out
+              <LogOut className="w-3.5 h-3.5" />
+              Terminate Workspace Session
             </button>
           </div>
         ) : (
-          <div className="space-y-6">
+          <div className="space-y-3">
             {error && (
-              <div className="bg-rose-500/10 border border-rose-500/20 text-rose-300 text-xs p-4 rounded-sm font-mono text-center">
-                {error}
+              <div className="bg-rose-950/20 border border-rose-900/40 text-rose-400 text-[10px] p-2.5 rounded-sm text-center uppercase tracking-tight">
+                ERR: {error}
               </div>
             )}
 
             <button
               onClick={handleGoogleLogin}
               disabled={loading}
-              className="w-full bg-sky-600 hover:bg-sky-500 text-white font-sans text-sm py-3 px-4 rounded-sm shadow-md transition duration-200 flex items-center justify-center gap-2 cursor-pointer"
+              className="w-full bg-slate-900 hover:bg-slate-800 text-slate-200 hover:text-white border border-slate-800 hover:border-slate-700 font-bold text-xs py-2 px-4 rounded-sm transition flex items-center justify-center gap-2 cursor-pointer"
             >
-              <LogIn className="w-4 h-4" />
-              {loading ? "Authenticating..." : "Continue with Google"}
+              <LogIn className="w-3.5 h-3.5 text-sky-500" />
+              {loading ? "PROCESSING..." : "INITIALIZE GOOGLE AUTH"}
             </button>
-
-            <div className="flex items-center gap-2 justify-center text-xs text-slate-500 font-mono pt-4 border-t border-slate-800">
-              <Shield className="w-4 h-4" />
-              <span>Secured by Firebase</span>
-            </div>
           </div>
         )}
+
+        {/* Collapsible Panel to Prevent Overcrowding */}
+        <div className="mt-3 border-t border-slate-900 pt-1">
+          <button
+            onClick={() => setShowSecuritySpecs(!showSecuritySpecs)}
+            className="w-full py-2 flex items-center justify-between text-[9px] text-slate-500 hover:text-slate-400 uppercase font-bold tracking-wider"
+          >
+            <span>Security Matrix &amp; Terms</span>
+            {showSecuritySpecs ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
+          </button>
+          
+          {showSecuritySpecs && (
+            <div className="bg-[#050811] border border-slate-950 p-2.5 rounded-sm text-[9px] text-slate-600 space-y-1.5 leading-normal uppercase">
+              <div className="flex items-start gap-1.5">
+                <Shield className="w-3 h-3 text-slate-500 mt-0.5 flex-shrink-0" />
+                <span>Synchronized asset parameters utilize TLS encryption standards for real-time model state saving.</span>
+              </div>
+              <p>Unauthorized deployment or tampering with network tokens terminates geometric workspace synchronization pipelines automatically.</p>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

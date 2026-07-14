@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
-import { Upload, Box, ShieldCheck, Activity, ArrowLeft, RotateCw, Sparkles } from "lucide-react";
+import { Upload, Box, Activity, ArrowLeft, RotateCw, ChevronDown, ChevronRight, Download } from "lucide-react";
 import { parseSTL, exportGeometryToSTL } from "../lib/stlParser";
 
 interface StlViewerSectionProps {
@@ -25,6 +25,18 @@ export default function StlViewerSection({ onBack, showToast }: StlViewerSection
 
   const [renderMode, setRenderMode] = useState<"metallic" | "dental" | "wireframe" | "points">("dental");
   
+  // UI Panel Toggle State
+  const [panels, setPanels] = useState({
+    upload: true,
+    render: true,
+    transform: false,
+    properties: true,
+  });
+
+  const togglePanel = (panel: keyof typeof panels) => {
+    setPanels((prev) => ({ ...prev, [panel]: !prev[panel] }));
+  };
+  
   // ThreeJS state references
   const sceneRef = useRef<THREE.Scene | null>(null);
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
@@ -36,9 +48,6 @@ export default function StlViewerSection({ onBack, showToast }: StlViewerSection
   // Edit operation state variables
   const [updateCounter, setUpdateCounter] = useState(0);
   const [scaleInput, setScaleInput] = useState<number>(1.0);
-  const [twistInput, setTwistInput] = useState<number>(0);
-  const [taperInput, setTaperInput] = useState<number>(1.0);
-  const [sliceInput, setSliceInput] = useState<number>(0);
 
   // Initialize Canvas
   useEffect(() => {
@@ -71,7 +80,6 @@ export default function StlViewerSection({ onBack, showToast }: StlViewerSection
     controls.dampingFactor = 0.05;
     controlsRef.current = controls;
 
-    // Lighting
     const ambientLight = new THREE.AmbientLight("#0f172a", 1.5);
     scene.add(ambientLight);
 
@@ -83,12 +91,10 @@ export default function StlViewerSection({ onBack, showToast }: StlViewerSection
     dirLight2.position.set(-10, 10, -15);
     scene.add(dirLight2);
 
-    // Grid Helpers
     const gridHelper = new THREE.GridHelper(40, 40, "#1e293b", "#0f172a");
     gridHelper.position.y = -1.5;
     scene.add(gridHelper);
 
-    // Animation loop
     let animationFrameId: number;
     const animate = () => {
       animationFrameId = requestAnimationFrame(animate);
@@ -119,7 +125,6 @@ export default function StlViewerSection({ onBack, showToast }: StlViewerSection
     };
   }, []);
 
-  // Update visual styles depending on render mode
   useEffect(() => {
     const scene = sceneRef.current;
     const geom = activeGeometryRef.current;
@@ -244,13 +249,7 @@ export default function StlViewerSection({ onBack, showToast }: StlViewerSection
     });
 
     activeGeometryRef.current = geometry;
-
-    // Reset modification fields
     setScaleInput(1.0);
-    setTwistInput(0);
-    setTaperInput(1.0);
-    setSliceInput(0);
-
     setRenderMode((prev) => (prev === "dental" ? "metallic" : "dental"));
 
     if (cameraRef.current && controlsRef.current) {
@@ -260,7 +259,6 @@ export default function StlViewerSection({ onBack, showToast }: StlViewerSection
     }
   };
 
-  // Recalculates stats when geometry coordinates are edited
   const recalculateStats = () => {
     const geometry = activeGeometryRef.current;
     if (!geometry) return;
@@ -353,104 +351,6 @@ export default function StlViewerSection({ onBack, showToast }: StlViewerSection
     showToast(`Rotated 90° on ${axis.toUpperCase()} axis`, "success");
   };
 
-  const applyTwist = (degrees: number) => {
-    if (degrees === 0) return;
-    const geom = activeGeometryRef.current;
-    if (!geom) return;
-    geom.computeBoundingBox();
-    const bbox = geom.boundingBox!;
-    const minY = bbox.min.y;
-    const maxY = bbox.max.y;
-    const height = maxY - minY;
-    if (height === 0) return;
-
-    const position = geom.getAttribute("position") as THREE.BufferAttribute;
-    const angleRad = (degrees * Math.PI) / 180;
-
-    for (let i = 0; i < position.count; i++) {
-      const x = position.getX(i);
-      const y = position.getY(i);
-      const z = position.getZ(i);
-
-      const factor = (y - minY) / height;
-      const theta = factor * angleRad;
-
-      const cos = Math.cos(theta);
-      const sin = Math.sin(theta);
-      const newX = x * cos - z * sin;
-      const newZ = x * sin + z * cos;
-
-      position.setXYZ(i, newX, y, newZ);
-    }
-
-    position.needsUpdate = true;
-    geom.computeBoundingBox();
-    geom.computeVertexNormals();
-    recalculateStats();
-    setUpdateCounter((prev) => prev + 1);
-    showToast(`Applied ${degrees}° twist deformation`, "success");
-  };
-
-  const applyTaper = (taperFactor: number) => {
-    const geom = activeGeometryRef.current;
-    if (!geom) return;
-    geom.computeBoundingBox();
-    const bbox = geom.boundingBox!;
-    const minY = bbox.min.y;
-    const maxY = bbox.max.y;
-    const height = maxY - minY;
-    if (height === 0) return;
-
-    const position = geom.getAttribute("position") as THREE.BufferAttribute;
-
-    for (let i = 0; i < position.count; i++) {
-      const x = position.getX(i);
-      const y = position.getY(i);
-      const z = position.getZ(i);
-
-      const factor = (y - minY) / height;
-      const s = 1 + (taperFactor - 1) * factor;
-
-      position.setXYZ(i, x * s, y, z * s);
-    }
-
-    position.needsUpdate = true;
-    geom.computeBoundingBox();
-    geom.computeVertexNormals();
-    recalculateStats();
-    setUpdateCounter((prev) => prev + 1);
-    showToast(`Applied taper deformation (${taperFactor}x)`, "success");
-  };
-
-  const applySliceCrop = (percent: number) => {
-    if (percent === 0) return;
-    const geom = activeGeometryRef.current;
-    if (!geom) return;
-    geom.computeBoundingBox();
-    const bbox = geom.boundingBox!;
-    const minY = bbox.min.y;
-    const maxY = bbox.max.y;
-    const height = maxY - minY;
-    
-    const cutY = minY + (percent / 100) * height;
-
-    const position = geom.getAttribute("position") as THREE.BufferAttribute;
-
-    for (let i = 0; i < position.count; i++) {
-      const y = position.getY(i);
-      if (y < cutY) {
-        position.setY(i, cutY);
-      }
-    }
-
-    position.needsUpdate = true;
-    geom.computeBoundingBox();
-    geom.computeVertexNormals();
-    recalculateStats();
-    setUpdateCounter((prev) => prev + 1);
-    showToast(`Flattened base below ${percent}% height threshold`, "success");
-  };
-
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -481,7 +381,6 @@ export default function StlViewerSection({ onBack, showToast }: StlViewerSection
     if (type === "dental") {
       name = "Lower_Arch_Mold.stl";
       geometry = new THREE.CylinderGeometry(1.2, 1.5, 1.4, 40, 10);
-      
       const pos = geometry.attributes.position;
       const tempV = new THREE.Vector3();
       for (let i = 0; i < pos.count; i++) {
@@ -570,26 +469,25 @@ export default function StlViewerSection({ onBack, showToast }: StlViewerSection
             <h1 className="text-xs font-bold tracking-wider text-white uppercase">
               STL File Analyzer
             </h1>
-            <p className="text-[10px] text-slate-500 font-mono mt-0.5">Verify geometry, volumes, and bounds</p>
           </div>
         </div>
 
         <div className="flex items-center gap-2">
           <button
             onClick={() => loadSample("dental")}
-            className="px-2.5 py-1.5 bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 rounded-sm text-xs font-medium transition cursor-pointer"
+            className="px-2.5 py-1 bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 rounded-sm text-[10px] font-mono transition cursor-pointer"
           >
             Tooth Crown
           </button>
           <button
             onClick={() => loadSample("impeller")}
-            className="px-2.5 py-1.5 bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 rounded-sm text-xs font-medium transition cursor-pointer"
+            className="px-2.5 py-1 bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 rounded-sm text-[10px] font-mono transition cursor-pointer"
           >
             Impeller Fin
           </button>
           <button
             onClick={() => loadSample("bracket")}
-            className="px-2.5 py-1.5 bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 rounded-sm text-xs font-medium transition cursor-pointer"
+            className="px-2.5 py-1 bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 rounded-sm text-[10px] font-mono transition cursor-pointer"
           >
             Hinge Bracket
           </button>
@@ -598,291 +496,209 @@ export default function StlViewerSection({ onBack, showToast }: StlViewerSection
 
       {/* Main Workspace */}
       <div className="flex-1 flex overflow-hidden">
-        {/* Left Side Controls */}
-        <div className="w-80 border-r border-slate-900 bg-[#050811] p-4 flex flex-col gap-4 overflow-y-auto custom-scrollbar">
+        {/* Sidebar Controls */}
+        <div className="w-80 border-r border-slate-900 bg-[#080d19] flex flex-col overflow-y-auto">
           
-          {/* File Upload Zone */}
-          <div className="space-y-2">
-            <span className="text-[10px] text-slate-500 font-mono tracking-widest block uppercase">
-              Source File
-            </span>
-            <label className="border border-dashed border-slate-800 hover:border-slate-600 bg-[#080d19] rounded-sm p-5 flex flex-col items-center justify-center text-center cursor-pointer transition relative overflow-hidden group">
-              <input
-                type="file"
-                accept=".stl"
-                onChange={handleFileUpload}
-                className="hidden"
-              />
-              <Upload className="w-5 h-5 text-slate-500 group-hover:text-sky-400 transition mb-2" />
-              <span className="text-xs font-medium text-slate-300">Upload .stl File</span>
-              <p className="text-[10px] text-slate-500 font-sans mt-1">
-                Drag and drop binary or ASCII files
-              </p>
-            </label>
-          </div>
-
-          {/* Render Mode Selectors */}
-          <div className="space-y-2.5 bg-[#080d19] p-3 rounded-sm border border-slate-900">
-            <span className="text-[10px] text-slate-500 font-mono tracking-widest block uppercase">
-              Render Mode
-            </span>
-            <div className="grid grid-cols-2 gap-1.5">
-              {(["dental", "metallic", "wireframe", "points"] as const).map((mode) => (
-                <button
-                  key={mode}
-                  onClick={() => setRenderMode(mode)}
-                  className={`py-1.5 rounded-sm text-[11px] font-sans capitalize transition cursor-pointer border ${
-                    renderMode === mode
-                      ? "bg-slate-900 text-sky-400 border-slate-800"
-                      : "bg-transparent text-slate-400 border-transparent hover:bg-slate-900/40 hover:text-slate-200"
-                  }`}
-                >
-                  {mode}
-                </button>
-              ))}
-            </div>
-            <button
-              onClick={handleRecenter}
-              className="w-full mt-2 py-1.5 bg-slate-900 hover:bg-slate-800 border border-slate-800 rounded-sm text-[10px] font-sans text-slate-300 hover:text-white transition cursor-pointer flex items-center justify-center gap-1.5"
+          {/* Section 1: File Upload */}
+          <div className="border-b border-slate-900">
+            <button 
+              onClick={() => togglePanel("upload")} 
+              className="w-full p-4 flex items-center justify-between text-[10px] font-mono tracking-widest uppercase text-slate-400 hover:text-slate-200"
             >
-              <RotateCw className="w-3 h-3" />
-              Recenter Viewport
+              <span>Source File</span>
+              {panels.upload ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
             </button>
+            {panels.upload && (
+              <div className="px-4 pb-4">
+                <label className="border border-dashed border-slate-700 hover:border-slate-500 bg-slate-900/50 rounded-sm p-4 flex flex-col items-center justify-center text-center cursor-pointer transition">
+                  <input
+                    type="file"
+                    accept=".stl"
+                    onChange={handleFileUpload}
+                    className="hidden"
+                  />
+                  <Upload className="w-5 h-5 text-slate-500 mb-2" />
+                  <span className="text-xs font-medium text-slate-300">Upload .stl</span>
+                  <p className="text-[9px] text-slate-500 mt-1">Binary or ASCII</p>
+                </label>
+              </div>
+            )}
           </div>
 
-          {/* Geometry Modifier */}
-          {modelStats && (
-            <div className="space-y-3 bg-[#080d19] p-3 rounded-sm border border-slate-900">
-              <span className="text-[10px] text-slate-500 font-mono tracking-widest block uppercase">
-                Geometry Modifier
-              </span>
-
-              {/* Scale Tool */}
-              <div className="space-y-1.5">
-                <label className="text-[10px] text-slate-500 font-mono uppercase block">Scale Modifier</label>
-                <div className="flex gap-1.5">
-                  <input
-                    type="number"
-                    step="0.1"
-                    min="0.1"
-                    max="5.0"
-                    value={scaleInput}
-                    onChange={(e) => setScaleInput(parseFloat(e.target.value) || 1.0)}
-                    className="w-16 bg-slate-950 border border-slate-800 rounded-sm px-1.5 py-1 text-xs text-slate-200 focus:outline-none focus:border-slate-700 font-mono"
-                  />
-                  <button
-                    onClick={() => applyScale(scaleInput)}
-                    className="flex-1 bg-slate-900 hover:bg-slate-800 text-sky-400 text-[10px] uppercase font-semibold rounded-sm py-1 border border-slate-800 transition cursor-pointer"
-                  >
-                    Apply Scale
-                  </button>
+          {/* Section 2: Render Mode */}
+          <div className="border-b border-slate-900">
+            <button 
+              onClick={() => togglePanel("render")} 
+              className="w-full p-4 flex items-center justify-between text-[10px] font-mono tracking-widest uppercase text-slate-400 hover:text-slate-200"
+            >
+              <span>Render Mode</span>
+              {panels.render ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+            </button>
+            {panels.render && (
+              <div className="px-4 pb-4 space-y-2">
+                <div className="grid grid-cols-2 gap-1.5">
+                  {(["dental", "metallic", "wireframe", "points"] as const).map((mode) => (
+                    <button
+                      key={mode}
+                      onClick={() => setRenderMode(mode)}
+                      className={`py-1.5 rounded-sm text-[10px] font-mono capitalize transition cursor-pointer border ${
+                        renderMode === mode
+                          ? "bg-slate-800 text-sky-400 border-slate-700"
+                          : "bg-transparent text-slate-500 border-transparent hover:bg-slate-900 hover:text-slate-300"
+                      }`}
+                    >
+                      {mode}
+                    </button>
+                  ))}
                 </div>
-                <div className="flex gap-1.5 mt-1">
-                  <button
-                    onClick={() => { setScaleInput(0.5); applyScale(0.5); }}
-                    className="flex-1 bg-slate-900 hover:bg-slate-800 border border-slate-800 text-[10px] text-slate-400 hover:text-slate-200 rounded-sm py-1 transition cursor-pointer font-mono"
-                  >
-                    0.5x
-                  </button>
-                  <button
-                    onClick={() => { setScaleInput(1.5); applyScale(1.5); }}
-                    className="flex-1 bg-slate-900 hover:bg-slate-800 border border-slate-800 text-[10px] text-slate-400 hover:text-slate-200 rounded-sm py-1 transition cursor-pointer font-mono"
-                  >
-                    1.5x
-                  </button>
-                  <button
-                    onClick={() => { setScaleInput(2.0); applyScale(2.0); }}
-                    className="flex-1 bg-slate-900 hover:bg-slate-800 border border-slate-800 text-[10px] text-slate-400 hover:text-slate-200 rounded-sm py-1 transition cursor-pointer font-mono"
-                  >
-                    2.0x
-                  </button>
-                </div>
-              </div>
-
-              {/* Slice / Flatten Base */}
-              <div className="space-y-1.5 pt-3 border-t border-slate-900">
-                <div className="flex justify-between items-center mb-0.5">
-                  <label className="text-[10px] text-slate-500 font-mono uppercase block">Flatten Bottom</label>
-                  <span className="text-[10px] text-sky-400 font-mono font-semibold">{sliceInput}% cut</span>
-                </div>
-                <input
-                  type="range"
-                  min="0"
-                  max="80"
-                  step="5"
-                  value={sliceInput}
-                  onChange={(e) => setSliceInput(parseInt(e.target.value) || 0)}
-                  className="w-full accent-sky-500 bg-slate-800 h-1 rounded-sm appearance-none cursor-pointer"
-                />
                 <button
-                  onClick={() => { applySliceCrop(sliceInput); setSliceInput(0); }}
-                  disabled={sliceInput === 0}
-                  className="w-full bg-slate-900 hover:bg-slate-800 disabled:opacity-40 disabled:hover:bg-slate-900 text-slate-300 disabled:text-slate-500 text-[10px] uppercase font-semibold rounded-sm py-1.5 border border-slate-800 transition cursor-pointer mt-1"
+                  onClick={handleRecenter}
+                  className="w-full py-1.5 bg-slate-900 hover:bg-slate-800 border border-slate-800 rounded-sm text-[10px] font-mono text-slate-400 hover:text-slate-200 transition cursor-pointer flex items-center justify-center gap-1.5"
                 >
-                  Flatten Base Below Cut
+                  <RotateCw className="w-3 h-3" />
+                  Recenter Viewport
                 </button>
               </div>
+            )}
+          </div>
 
-              {/* Twist & Taper */}
-              <div className="space-y-2 pt-3 border-t border-slate-900">
-                <div className="grid grid-cols-2 gap-2">
-                  {/* Twist */}
+          {/* Section 3: Transform Modifiers */}
+          {modelStats && (
+            <div className="border-b border-slate-900">
+              <button 
+                onClick={() => togglePanel("transform")} 
+                className="w-full p-4 flex items-center justify-between text-[10px] font-mono tracking-widest uppercase text-slate-400 hover:text-slate-200"
+              >
+                <span>Transform Tools</span>
+                {panels.transform ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+              </button>
+              {panels.transform && (
+                <div className="px-4 pb-4 space-y-4">
+                  {/* Scale Tool */}
                   <div className="space-y-1.5">
-                    <label className="text-[10px] text-slate-500 font-mono uppercase block">Twist Angle</label>
-                    <input
-                      type="number"
-                      min="-180"
-                      max="180"
-                      value={twistInput}
-                      onChange={(e) => setTwistInput(parseInt(e.target.value) || 0)}
-                      className="w-full bg-slate-950 border border-slate-800 rounded-sm px-1.5 py-1 text-xs text-slate-200 focus:outline-none focus:border-slate-700 font-mono"
-                    />
-                    <button
-                      onClick={() => { applyTwist(twistInput); setTwistInput(0); }}
-                      className="w-full bg-slate-900 hover:bg-slate-800 text-slate-300 text-[10px] uppercase font-semibold rounded-sm py-1.5 border border-slate-800 transition cursor-pointer"
-                    >
-                      Twist Y
-                    </button>
+                    <label className="text-[9px] text-slate-500 font-mono uppercase block">Scale Modifier</label>
+                    <div className="flex gap-1.5">
+                      <input
+                        type="number"
+                        step="0.1"
+                        min="0.1"
+                        max="5.0"
+                        value={scaleInput}
+                        onChange={(e) => setScaleInput(parseFloat(e.target.value) || 1.0)}
+                        className="w-16 bg-slate-900 border border-slate-800 rounded-sm px-1.5 py-1 text-xs text-slate-200 focus:outline-none focus:border-slate-600"
+                      />
+                      <button
+                        onClick={() => applyScale(scaleInput)}
+                        className="flex-1 bg-slate-900 hover:bg-slate-800 text-slate-300 text-[10px] rounded-sm py-1 border border-slate-800 transition cursor-pointer"
+                      >
+                        Apply Scale
+                      </button>
+                    </div>
                   </div>
 
-                  {/* Taper */}
+                  {/* Rotate Tools */}
                   <div className="space-y-1.5">
-                    <label className="text-[10px] text-slate-500 font-mono uppercase block">Taper Top</label>
-                    <input
-                      type="number"
-                      step="0.1"
-                      min="0.1"
-                      max="3.0"
-                      value={taperInput}
-                      onChange={(e) => setTaperInput(parseFloat(e.target.value) || 1.0)}
-                      className="w-full bg-slate-950 border border-slate-800 rounded-sm px-1.5 py-1 text-xs text-slate-200 focus:outline-none focus:border-slate-700 font-mono"
-                    />
-                    <button
-                      onClick={() => { applyTaper(taperInput); setTaperInput(1.0); }}
-                      className="w-full bg-slate-900 hover:bg-slate-800 text-slate-300 text-[10px] uppercase font-semibold rounded-sm py-1.5 border border-slate-800 transition cursor-pointer"
-                    >
-                      Taper Y
-                    </button>
+                    <label className="text-[9px] text-slate-500 font-mono uppercase block">Rotate 90° Axis</label>
+                    <div className="grid grid-cols-3 gap-1">
+                      <button
+                        onClick={() => applyRotation("x")}
+                        className="bg-slate-900 hover:bg-slate-800 border border-slate-800 text-[10px] text-slate-400 hover:text-slate-200 rounded-sm py-1 transition cursor-pointer"
+                      >
+                        X-Axis
+                      </button>
+                      <button
+                        onClick={() => applyRotation("y")}
+                        className="bg-slate-900 hover:bg-slate-800 border border-slate-800 text-[10px] text-slate-400 hover:text-slate-200 rounded-sm py-1 transition cursor-pointer"
+                      >
+                        Y-Axis
+                      </button>
+                      <button
+                        onClick={() => applyRotation("z")}
+                        className="bg-slate-900 hover:bg-slate-800 border border-slate-800 text-[10px] text-slate-400 hover:text-slate-200 rounded-sm py-1 transition cursor-pointer"
+                      >
+                        Z-Axis
+                      </button>
+                    </div>
                   </div>
                 </div>
-              </div>
-
-              {/* Rotate Tools */}
-              <div className="space-y-1.5 pt-3 border-t border-slate-900">
-                <label className="text-[10px] text-slate-500 font-mono uppercase block">Rotate 90° Axis</label>
-                <div className="grid grid-cols-3 gap-1.5">
-                  <button
-                    onClick={() => applyRotation("x")}
-                    className="bg-slate-900 hover:bg-slate-800 border border-slate-800 text-[10px] text-slate-400 hover:text-slate-200 rounded-sm py-1 transition cursor-pointer font-mono"
-                  >
-                    X
-                  </button>
-                  <button
-                    onClick={() => applyRotation("y")}
-                    className="bg-slate-900 hover:bg-slate-800 border border-slate-800 text-[10px] text-slate-400 hover:text-slate-200 rounded-sm py-1 transition cursor-pointer font-mono"
-                  >
-                    Y
-                  </button>
-                  <button
-                    onClick={() => applyRotation("z")}
-                    className="bg-slate-900 hover:bg-slate-800 border border-slate-800 text-[10px] text-slate-400 hover:text-slate-200 rounded-sm py-1 transition cursor-pointer font-mono"
-                  >
-                    Z
-                  </button>
-                </div>
-              </div>
+              )}
             </div>
           )}
 
-          {/* Diagnostics */}
+          {/* Section 4: Diagnostics */}
           {modelStats ? (
-            <div className="flex-1 flex flex-col min-h-0 space-y-3">
-              <div className="flex items-center gap-1.5">
-                <Activity className="w-3.5 h-3.5 text-slate-400" />
-                <span className="text-[10px] text-slate-500 font-mono tracking-wider uppercase">
-                  Geometric Properties
-                </span>
-              </div>
-
-              <div className="bg-[#080d19] border border-slate-900 rounded-sm p-4 space-y-3.5">
-                <div>
-                  <label className="text-[10px] text-slate-500 font-mono block uppercase">File Name</label>
-                  <span className="text-xs font-medium text-slate-200 block truncate font-sans">{modelStats.name}</span>
-                </div>
-
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <label className="text-[10px] text-slate-500 font-mono block uppercase">Triangles</label>
-                    <span className="text-xs font-mono text-slate-300">
-                      {modelStats.triangles.toLocaleString()}
-                    </span>
-                  </div>
-                  <div>
-                    <label className="text-[10px] text-slate-500 font-mono block uppercase">Vertices</label>
-                    <span className="text-xs font-mono text-slate-300">
-                      {modelStats.vertices.toLocaleString()}
-                    </span>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="text-[10px] text-slate-500 font-mono block uppercase">Volume</label>
-                  <span className="text-xs font-mono text-sky-400">
-                    {modelStats.volume.toFixed(2)} mm³
-                  </span>
-                </div>
-
-                <div>
-                  <label className="text-[10px] text-slate-500 font-mono block uppercase">Surface Area</label>
-                  <span className="text-xs font-mono text-slate-300">
-                    {modelStats.surfaceArea.toFixed(2)} mm²
-                  </span>
-                </div>
-
-                <div>
-                  <label className="text-[10px] text-slate-500 font-mono block uppercase">Dimensions</label>
-                  <span className="text-[11px] font-mono text-slate-400 block mt-0.5">
-                    {modelStats.bounds.x.toFixed(1)} &times; {modelStats.bounds.y.toFixed(1)} &times; {modelStats.bounds.z.toFixed(1)} mm
-                  </span>
-                </div>
-              </div>
-
-              <button
-                onClick={handleDownloadSTL}
-                className="w-full py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white uppercase tracking-wider font-semibold text-[10px] rounded-sm transition cursor-pointer flex items-center justify-center gap-1.5 mt-auto"
+            <div className="border-b border-slate-900 flex-1">
+              <button 
+                onClick={() => togglePanel("properties")} 
+                className="w-full p-4 flex items-center justify-between text-[10px] font-mono tracking-widest uppercase text-slate-400 hover:text-slate-200"
               >
-                <Sparkles className="w-3.5 h-3.5" />
-                Export Model (STL)
+                <div className="flex items-center gap-1.5">
+                  <Activity className="w-3.5 h-3.5" />
+                  <span>Properties</span>
+                </div>
+                {panels.properties ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
               </button>
+              
+              {panels.properties && (
+                <div className="px-4 pb-4 space-y-3">
+                  <div className="bg-slate-900/50 border border-slate-800 rounded-sm p-3 space-y-2">
+                    <div>
+                      <label className="text-[9px] text-slate-500 font-mono block uppercase">File Name</label>
+                      <span className="text-xs font-mono text-slate-300 block truncate">{modelStats.name}</span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="text-[9px] text-slate-500 font-mono block uppercase">Triangles</label>
+                        <span className="text-xs font-mono text-slate-300">{modelStats.triangles.toLocaleString()}</span>
+                      </div>
+                      <div>
+                        <label className="text-[9px] text-slate-500 font-mono block uppercase">Vertices</label>
+                        <span className="text-xs font-mono text-slate-300">{modelStats.vertices.toLocaleString()}</span>
+                      </div>
+                    </div>
+                    <div>
+                      <label className="text-[9px] text-slate-500 font-mono block uppercase">Volume</label>
+                      <span className="text-xs font-mono text-sky-400">{modelStats.volume.toFixed(2)} mm³</span>
+                    </div>
+                    <div>
+                      <label className="text-[9px] text-slate-500 font-mono block uppercase">Dimensions (W/H/D)</label>
+                      <span className="text-[10px] font-mono text-slate-400 block mt-0.5">
+                        {modelStats.bounds.x.toFixed(1)} &times; {modelStats.bounds.y.toFixed(1)} &times; {modelStats.bounds.z.toFixed(1)} mm
+                      </span>
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={handleDownloadSTL}
+                    className="w-full py-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-600 text-white font-mono text-[10px] uppercase rounded-sm transition cursor-pointer flex items-center justify-center gap-1.5 mt-2"
+                  >
+                    <Download className="w-3 h-3" />
+                    Export STL
+                  </button>
+                </div>
+              )}
             </div>
           ) : (
-            <div className="flex-1 flex flex-col items-center justify-center text-center p-4 bg-[#080d19] rounded-sm border border-slate-900 border-dashed">
+            <div className="flex-1 flex flex-col items-center justify-center text-center p-4">
               <Box className="w-6 h-6 text-slate-700 mb-2" />
-              <p className="text-[11px] font-mono text-slate-500 uppercase tracking-widest">No Active Model</p>
-              <p className="text-[10px] text-slate-600 font-sans mt-2">
-                Upload or select a template to begin analysis.
-              </p>
+              <p className="text-[10px] font-mono text-slate-500">No active model loaded.</p>
             </div>
           )}
         </div>
 
         {/* Viewport Canvas */}
         <div className="flex-1 relative bg-[#050811] flex flex-col p-4">
-          <div className="relative w-full h-full rounded-sm overflow-hidden border border-slate-900 bg-[#03060c]">
+          <div className="relative w-full h-full rounded-sm overflow-hidden border border-slate-900 bg-[#050811]">
             <div ref={containerRef} className="w-full h-full cursor-grab active:cursor-grabbing" />
 
-            <div className="absolute bottom-4 left-4 right-4 bg-[#080d19] border border-slate-800 rounded-sm p-3 flex items-center justify-between text-[11px] font-mono text-slate-400">
-              <span className="flex items-center gap-1.5">
-                <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-                <span>100% Secure Client-Side Verification (Offline-safe)</span>
-              </span>
+            <div className="absolute bottom-4 left-4 right-4 flex items-center justify-end text-[10px] font-mono text-slate-500 pointer-events-none">
               <span>Left-click drag to orbit | Scroll to zoom</span>
             </div>
 
             {loading && (
-              <div className="absolute inset-0 bg-[#050811]/90 flex flex-col items-center justify-center">
-                <RotateCw className="w-6 h-6 text-sky-400 animate-spin mb-2" />
-                <span className="text-xs font-mono text-slate-300 uppercase tracking-wider">Parsing Model Geometry...</span>
+              <div className="absolute inset-0 bg-[#050811]/80 flex flex-col items-center justify-center">
+                <RotateCw className="w-5 h-5 text-sky-500 animate-spin mb-2" />
+                <span className="text-[10px] font-mono text-slate-400 uppercase tracking-wider">Processing Geometry...</span>
               </div>
             )}
           </div>
