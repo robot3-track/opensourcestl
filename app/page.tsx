@@ -391,7 +391,7 @@ export default function Home() {
               Inspect, Model, and Synthesize 3D Assets
             </h2>
             <p className="text-sm text-slate-400 leading-relaxed">
-              An engineering-grade constructive solid geometry modeler, optical triangulation scan simulator, and client-side STL geometry analyzer.
+              An student-grade constructive solid geometry modeler, scanner, and client-side STL geometry analyzer.
             </p>
           </div>
 
@@ -466,11 +466,11 @@ export default function Home() {
 
         {/* Simple professional footer */}
         <footer className="py-6 text-center border-t border-slate-900 bg-[#03060c] text-[10px] font-mono text-slate-600 flex-shrink-0 flex items-center justify-center gap-6">
-          <span>&copy; OPENSOURCE STL SCANNERS INC.</span>
+          <span>&copy; OPENSOURCE STL is made by Y. Chang, student of MHS </span>
           <span>&bull;</span>
-          <span>100% PRIVATE DATA BOUNDARY</span>
+          <span>100% Private Stored Data</span>
           <span>&bull;</span>
-          <span>FIREBASE SECURED INTEGRITY</span>
+          <span>Your Data is Secured With Firebase</span>
         </footer>
 
         {/* Secure Sign In Modal Overlay */}
@@ -807,7 +807,7 @@ export default function Home() {
                 <Database className="w-8 h-8 text-slate-600 mb-2" />
                 <p className="text-xs font-bold text-slate-300">Authentication Required</p>
                 <p className="text-[10px] text-slate-500 max-w-[220px] mt-1.5">
-                  Sign in with a secure Google profile to access cloud vault synchronization.
+                  Sign in with a secure Google profile to access cloud synch.
                 </p>
                 <button
                   onClick={() => {
