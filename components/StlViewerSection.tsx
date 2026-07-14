@@ -556,11 +556,11 @@ export default function StlViewerSection({ onBack, showToast }: StlViewerSection
   return (
     <div className="flex flex-col h-full bg-[#050811] text-slate-100 font-sans">
       {/* Header */}
-      <header className="flex items-center justify-between px-6 py-4 border-b border-slate-900 bg-[#080d19]/80 backdrop-blur-md">
+      <header className="flex items-center justify-between px-6 py-4 border-b border-slate-900 bg-[#080d19]">
         <div className="flex items-center gap-4">
           <button
             onClick={onBack}
-            className="p-1.5 hover:bg-slate-800 rounded-xl text-slate-400 hover:text-slate-100 transition cursor-pointer flex items-center gap-1.5 text-xs font-mono"
+            className="p-1.5 hover:bg-slate-800 rounded-sm text-slate-400 hover:text-slate-100 transition cursor-pointer flex items-center gap-1.5 text-xs font-mono"
           >
             <ArrowLeft className="w-3.5 h-3.5" />
             <span>BACK</span>
@@ -570,26 +570,26 @@ export default function StlViewerSection({ onBack, showToast }: StlViewerSection
             <h1 className="text-xs font-bold tracking-wider text-white uppercase">
               STL File Analyzer
             </h1>
-            <p className="text-[10px] text-slate-400 font-mono">Verify geometry, volumes, and bounds</p>
+            <p className="text-[10px] text-slate-500 font-mono mt-0.5">Verify geometry, volumes, and bounds</p>
           </div>
         </div>
 
         <div className="flex items-center gap-2">
           <button
             onClick={() => loadSample("dental")}
-            className="px-2.5 py-1.5 bg-slate-900 hover:bg-slate-850 text-slate-300 border border-slate-800 rounded-lg text-xs font-medium transition cursor-pointer"
+            className="px-2.5 py-1.5 bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 rounded-sm text-xs font-medium transition cursor-pointer"
           >
             Tooth Crown
           </button>
           <button
             onClick={() => loadSample("impeller")}
-            className="px-2.5 py-1.5 bg-slate-900 hover:bg-slate-850 text-slate-300 border border-slate-800 rounded-lg text-xs font-medium transition cursor-pointer"
+            className="px-2.5 py-1.5 bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 rounded-sm text-xs font-medium transition cursor-pointer"
           >
             Impeller Fin
           </button>
           <button
             onClick={() => loadSample("bracket")}
-            className="px-2.5 py-1.5 bg-slate-900 hover:bg-slate-850 text-slate-300 border border-slate-800 rounded-lg text-xs font-medium transition cursor-pointer"
+            className="px-2.5 py-1.5 bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 rounded-sm text-xs font-medium transition cursor-pointer"
           >
             Hinge Bracket
           </button>
@@ -599,30 +599,30 @@ export default function StlViewerSection({ onBack, showToast }: StlViewerSection
       {/* Main Workspace */}
       <div className="flex-1 flex overflow-hidden">
         {/* Left Side Controls */}
-        <div className="w-80 border-r border-slate-900 bg-[#050811] p-5 flex flex-col gap-4 overflow-y-auto">
+        <div className="w-80 border-r border-slate-900 bg-[#050811] p-4 flex flex-col gap-4 overflow-y-auto custom-scrollbar">
           
           {/* File Upload Zone */}
           <div className="space-y-2">
             <span className="text-[10px] text-slate-500 font-mono tracking-widest block uppercase">
               Source File
             </span>
-            <label className="border-2 border-dashed border-slate-850 hover:border-sky-500/30 bg-slate-950/40 rounded-2xl p-6 flex flex-col items-center justify-center text-center cursor-pointer transition relative overflow-hidden group">
+            <label className="border border-dashed border-slate-800 hover:border-slate-600 bg-[#080d19] rounded-sm p-5 flex flex-col items-center justify-center text-center cursor-pointer transition relative overflow-hidden group">
               <input
                 type="file"
                 accept=".stl"
                 onChange={handleFileUpload}
                 className="hidden"
               />
-              <Upload className="w-7 h-7 text-slate-500 group-hover:text-sky-400 transition mb-2" />
+              <Upload className="w-5 h-5 text-slate-500 group-hover:text-sky-400 transition mb-2" />
               <span className="text-xs font-medium text-slate-300">Upload .stl File</span>
-              <p className="text-[9px] text-slate-500 font-sans mt-1">
+              <p className="text-[10px] text-slate-500 font-sans mt-1">
                 Drag and drop binary or ASCII files
               </p>
             </label>
           </div>
 
           {/* Render Mode Selectors */}
-          <div className="space-y-2.5 bg-slate-950 p-3 rounded-xl border border-slate-900">
+          <div className="space-y-2.5 bg-[#080d19] p-3 rounded-sm border border-slate-900">
             <span className="text-[10px] text-slate-500 font-mono tracking-widest block uppercase">
               Render Mode
             </span>
@@ -631,9 +631,9 @@ export default function StlViewerSection({ onBack, showToast }: StlViewerSection
                 <button
                   key={mode}
                   onClick={() => setRenderMode(mode)}
-                  className={`py-1.5 rounded-lg text-[11px] font-sans capitalize transition cursor-pointer border ${
+                  className={`py-1.5 rounded-sm text-[11px] font-sans capitalize transition cursor-pointer border ${
                     renderMode === mode
-                      ? "bg-slate-900 text-sky-400 border-sky-500/30"
+                      ? "bg-slate-900 text-sky-400 border-slate-800"
                       : "bg-transparent text-slate-400 border-transparent hover:bg-slate-900/40 hover:text-slate-200"
                   }`}
                 >
@@ -643,7 +643,7 @@ export default function StlViewerSection({ onBack, showToast }: StlViewerSection
             </div>
             <button
               onClick={handleRecenter}
-              className="w-full mt-2 py-1.5 bg-slate-900 hover:bg-slate-850 border border-slate-800 rounded-lg text-[10px] font-sans text-slate-300 hover:text-white transition cursor-pointer flex items-center justify-center gap-1.5"
+              className="w-full mt-2 py-1.5 bg-slate-900 hover:bg-slate-800 border border-slate-800 rounded-sm text-[10px] font-sans text-slate-300 hover:text-white transition cursor-pointer flex items-center justify-center gap-1.5"
             >
               <RotateCw className="w-3 h-3" />
               Recenter Viewport
@@ -652,14 +652,14 @@ export default function StlViewerSection({ onBack, showToast }: StlViewerSection
 
           {/* Geometry Modifier */}
           {modelStats && (
-            <div className="space-y-3 bg-slate-950 p-3.5 rounded-xl border border-slate-900">
+            <div className="space-y-3 bg-[#080d19] p-3 rounded-sm border border-slate-900">
               <span className="text-[10px] text-slate-500 font-mono tracking-widest block uppercase">
                 Geometry Modifier
               </span>
 
               {/* Scale Tool */}
-              <div className="space-y-1">
-                <label className="text-[9px] text-slate-400 font-mono uppercase block">Scale Modifier</label>
+              <div className="space-y-1.5">
+                <label className="text-[10px] text-slate-500 font-mono uppercase block">Scale Modifier</label>
                 <div className="flex gap-1.5">
                   <input
                     type="number"
@@ -668,31 +668,31 @@ export default function StlViewerSection({ onBack, showToast }: StlViewerSection
                     max="5.0"
                     value={scaleInput}
                     onChange={(e) => setScaleInput(parseFloat(e.target.value) || 1.0)}
-                    className="w-16 bg-slate-900 border border-slate-800 rounded px-1.5 py-1 text-xs text-slate-200 focus:outline-none focus:border-slate-700"
+                    className="w-16 bg-slate-950 border border-slate-800 rounded-sm px-1.5 py-1 text-xs text-slate-200 focus:outline-none focus:border-slate-700 font-mono"
                   />
                   <button
                     onClick={() => applyScale(scaleInput)}
-                    className="flex-1 bg-slate-900 hover:bg-slate-850 text-sky-400 text-[10px] rounded py-1 font-medium border border-slate-800 transition cursor-pointer"
+                    className="flex-1 bg-slate-900 hover:bg-slate-800 text-sky-400 text-[10px] uppercase font-semibold rounded-sm py-1 border border-slate-800 transition cursor-pointer"
                   >
                     Apply Scale
                   </button>
                 </div>
-                <div className="flex gap-1 mt-1">
+                <div className="flex gap-1.5 mt-1">
                   <button
                     onClick={() => { setScaleInput(0.5); applyScale(0.5); }}
-                    className="bg-slate-900 hover:bg-slate-850 border border-slate-800 text-[9px] text-slate-400 hover:text-slate-200 rounded px-1.5 py-0.5 transition cursor-pointer"
+                    className="flex-1 bg-slate-900 hover:bg-slate-800 border border-slate-800 text-[10px] text-slate-400 hover:text-slate-200 rounded-sm py-1 transition cursor-pointer font-mono"
                   >
                     0.5x
                   </button>
                   <button
                     onClick={() => { setScaleInput(1.5); applyScale(1.5); }}
-                    className="bg-slate-900 hover:bg-slate-850 border border-slate-800 text-[9px] text-slate-400 hover:text-slate-200 rounded px-1.5 py-0.5 transition cursor-pointer"
+                    className="flex-1 bg-slate-900 hover:bg-slate-800 border border-slate-800 text-[10px] text-slate-400 hover:text-slate-200 rounded-sm py-1 transition cursor-pointer font-mono"
                   >
                     1.5x
                   </button>
                   <button
                     onClick={() => { setScaleInput(2.0); applyScale(2.0); }}
-                    className="bg-slate-900 hover:bg-slate-850 border border-slate-800 text-[9px] text-slate-400 hover:text-slate-200 rounded px-1.5 py-0.5 transition cursor-pointer"
+                    className="flex-1 bg-slate-900 hover:bg-slate-800 border border-slate-800 text-[10px] text-slate-400 hover:text-slate-200 rounded-sm py-1 transition cursor-pointer font-mono"
                   >
                     2.0x
                   </button>
@@ -700,10 +700,10 @@ export default function StlViewerSection({ onBack, showToast }: StlViewerSection
               </div>
 
               {/* Slice / Flatten Base */}
-              <div className="space-y-1 pt-2 border-t border-slate-900">
+              <div className="space-y-1.5 pt-3 border-t border-slate-900">
                 <div className="flex justify-between items-center mb-0.5">
-                  <label className="text-[9px] text-slate-400 font-mono uppercase block">Flatten Bottom</label>
-                  <span className="text-[9px] text-sky-400 font-mono font-semibold">{sliceInput}% height</span>
+                  <label className="text-[10px] text-slate-500 font-mono uppercase block">Flatten Bottom</label>
+                  <span className="text-[10px] text-sky-400 font-mono font-semibold">{sliceInput}% cut</span>
                 </div>
                 <input
                   type="range"
@@ -712,42 +712,42 @@ export default function StlViewerSection({ onBack, showToast }: StlViewerSection
                   step="5"
                   value={sliceInput}
                   onChange={(e) => setSliceInput(parseInt(e.target.value) || 0)}
-                  className="w-full accent-sky-500 bg-slate-900 h-1 rounded-lg appearance-none cursor-pointer"
+                  className="w-full accent-sky-500 bg-slate-800 h-1 rounded-sm appearance-none cursor-pointer"
                 />
                 <button
                   onClick={() => { applySliceCrop(sliceInput); setSliceInput(0); }}
                   disabled={sliceInput === 0}
-                  className="w-full bg-slate-900 hover:bg-slate-850 disabled:opacity-40 disabled:hover:bg-slate-900 text-slate-300 disabled:text-slate-500 text-[10px] rounded py-1 font-medium border border-slate-800 transition cursor-pointer mt-1"
+                  className="w-full bg-slate-900 hover:bg-slate-800 disabled:opacity-40 disabled:hover:bg-slate-900 text-slate-300 disabled:text-slate-500 text-[10px] uppercase font-semibold rounded-sm py-1.5 border border-slate-800 transition cursor-pointer mt-1"
                 >
                   Flatten Base Below Cut
                 </button>
               </div>
 
               {/* Twist & Taper */}
-              <div className="space-y-2 pt-2 border-t border-slate-900">
+              <div className="space-y-2 pt-3 border-t border-slate-900">
                 <div className="grid grid-cols-2 gap-2">
                   {/* Twist */}
-                  <div className="space-y-1">
-                    <label className="text-[9px] text-slate-400 font-mono uppercase block">Twist Angle</label>
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] text-slate-500 font-mono uppercase block">Twist Angle</label>
                     <input
                       type="number"
                       min="-180"
                       max="180"
                       value={twistInput}
                       onChange={(e) => setTwistInput(parseInt(e.target.value) || 0)}
-                      className="w-full bg-slate-900 border border-slate-800 rounded px-1.5 py-1 text-xs text-slate-200 focus:outline-none focus:border-slate-700"
+                      className="w-full bg-slate-950 border border-slate-800 rounded-sm px-1.5 py-1 text-xs text-slate-200 focus:outline-none focus:border-slate-700 font-mono"
                     />
                     <button
                       onClick={() => { applyTwist(twistInput); setTwistInput(0); }}
-                      className="w-full bg-slate-900 hover:bg-slate-850 text-slate-300 text-[10px] rounded py-1 border border-slate-800 transition cursor-pointer"
+                      className="w-full bg-slate-900 hover:bg-slate-800 text-slate-300 text-[10px] uppercase font-semibold rounded-sm py-1.5 border border-slate-800 transition cursor-pointer"
                     >
                       Twist Y
                     </button>
                   </div>
 
                   {/* Taper */}
-                  <div className="space-y-1">
-                    <label className="text-[9px] text-slate-400 font-mono uppercase block">Taper Top</label>
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] text-slate-500 font-mono uppercase block">Taper Top</label>
                     <input
                       type="number"
                       step="0.1"
@@ -755,11 +755,11 @@ export default function StlViewerSection({ onBack, showToast }: StlViewerSection
                       max="3.0"
                       value={taperInput}
                       onChange={(e) => setTaperInput(parseFloat(e.target.value) || 1.0)}
-                      className="w-full bg-slate-900 border border-slate-800 rounded px-1.5 py-1 text-xs text-slate-200 focus:outline-none focus:border-slate-700"
+                      className="w-full bg-slate-950 border border-slate-800 rounded-sm px-1.5 py-1 text-xs text-slate-200 focus:outline-none focus:border-slate-700 font-mono"
                     />
                     <button
                       onClick={() => { applyTaper(taperInput); setTaperInput(1.0); }}
-                      className="w-full bg-slate-900 hover:bg-slate-850 text-slate-300 text-[10px] rounded py-1 border border-slate-800 transition cursor-pointer"
+                      className="w-full bg-slate-900 hover:bg-slate-800 text-slate-300 text-[10px] uppercase font-semibold rounded-sm py-1.5 border border-slate-800 transition cursor-pointer"
                     >
                       Taper Y
                     </button>
@@ -768,26 +768,26 @@ export default function StlViewerSection({ onBack, showToast }: StlViewerSection
               </div>
 
               {/* Rotate Tools */}
-              <div className="space-y-1 pt-2 border-t border-slate-900">
-                <label className="text-[9px] text-slate-400 font-mono uppercase block">Rotate 90° Axis</label>
-                <div className="grid grid-cols-3 gap-1">
+              <div className="space-y-1.5 pt-3 border-t border-slate-900">
+                <label className="text-[10px] text-slate-500 font-mono uppercase block">Rotate 90° Axis</label>
+                <div className="grid grid-cols-3 gap-1.5">
                   <button
                     onClick={() => applyRotation("x")}
-                    className="bg-slate-900 hover:bg-slate-850 border border-slate-800 text-[9px] text-slate-400 hover:text-slate-200 rounded py-1 transition cursor-pointer"
+                    className="bg-slate-900 hover:bg-slate-800 border border-slate-800 text-[10px] text-slate-400 hover:text-slate-200 rounded-sm py-1 transition cursor-pointer font-mono"
                   >
-                    X-Axis
+                    X
                   </button>
                   <button
                     onClick={() => applyRotation("y")}
-                    className="bg-slate-900 hover:bg-slate-850 border border-slate-800 text-[9px] text-slate-400 hover:text-slate-200 rounded py-1 transition cursor-pointer"
+                    className="bg-slate-900 hover:bg-slate-800 border border-slate-800 text-[10px] text-slate-400 hover:text-slate-200 rounded-sm py-1 transition cursor-pointer font-mono"
                   >
-                    Y-Axis
+                    Y
                   </button>
                   <button
                     onClick={() => applyRotation("z")}
-                    className="bg-slate-900 hover:bg-slate-850 border border-slate-800 text-[9px] text-slate-400 hover:text-slate-200 rounded py-1 transition cursor-pointer"
+                    className="bg-slate-900 hover:bg-slate-800 border border-slate-800 text-[10px] text-slate-400 hover:text-slate-200 rounded-sm py-1 transition cursor-pointer font-mono"
                   >
-                    Z-Axis
+                    Z
                   </button>
                 </div>
               </div>
@@ -799,49 +799,49 @@ export default function StlViewerSection({ onBack, showToast }: StlViewerSection
             <div className="flex-1 flex flex-col min-h-0 space-y-3">
               <div className="flex items-center gap-1.5">
                 <Activity className="w-3.5 h-3.5 text-slate-400" />
-                <span className="text-[10px] text-slate-400 font-mono tracking-wider uppercase">
+                <span className="text-[10px] text-slate-500 font-mono tracking-wider uppercase">
                   Geometric Properties
                 </span>
               </div>
 
-              <div className="bg-slate-950 border border-slate-900 rounded-2xl p-4 space-y-3.5">
+              <div className="bg-[#080d19] border border-slate-900 rounded-sm p-4 space-y-3.5">
                 <div>
-                  <label className="text-[9px] text-slate-500 font-mono block uppercase">File Name</label>
-                  <span className="text-xs font-medium text-slate-200 block truncate">{modelStats.name}</span>
+                  <label className="text-[10px] text-slate-500 font-mono block uppercase">File Name</label>
+                  <span className="text-xs font-medium text-slate-200 block truncate font-sans">{modelStats.name}</span>
                 </div>
 
                 <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <label className="text-[9px] text-slate-500 font-mono block uppercase">Triangles</label>
-                    <span className="text-xs font-mono font-bold text-slate-300">
+                    <label className="text-[10px] text-slate-500 font-mono block uppercase">Triangles</label>
+                    <span className="text-xs font-mono text-slate-300">
                       {modelStats.triangles.toLocaleString()}
                     </span>
                   </div>
                   <div>
-                    <label className="text-[9px] text-slate-500 font-mono block uppercase">Vertices</label>
-                    <span className="text-xs font-mono font-bold text-slate-300">
+                    <label className="text-[10px] text-slate-500 font-mono block uppercase">Vertices</label>
+                    <span className="text-xs font-mono text-slate-300">
                       {modelStats.vertices.toLocaleString()}
                     </span>
                   </div>
                 </div>
 
                 <div>
-                  <label className="text-[9px] text-slate-500 font-mono block uppercase">Volume</label>
-                  <span className="text-xs font-mono font-bold text-sky-400">
+                  <label className="text-[10px] text-slate-500 font-mono block uppercase">Volume</label>
+                  <span className="text-xs font-mono text-sky-400">
                     {modelStats.volume.toFixed(2)} mm³
                   </span>
                 </div>
 
                 <div>
-                  <label className="text-[9px] text-slate-500 font-mono block uppercase">Surface Area</label>
-                  <span className="text-xs font-mono font-bold text-slate-300">
+                  <label className="text-[10px] text-slate-500 font-mono block uppercase">Surface Area</label>
+                  <span className="text-xs font-mono text-slate-300">
                     {modelStats.surfaceArea.toFixed(2)} mm²
                   </span>
                 </div>
 
                 <div>
-                  <label className="text-[9px] text-slate-500 font-mono block uppercase">Dimensions</label>
-                  <span className="text-[11px] font-mono font-semibold text-slate-400 block mt-0.5">
+                  <label className="text-[10px] text-slate-500 font-mono block uppercase">Dimensions</label>
+                  <span className="text-[11px] font-mono text-slate-400 block mt-0.5">
                     {modelStats.bounds.x.toFixed(1)} &times; {modelStats.bounds.y.toFixed(1)} &times; {modelStats.bounds.z.toFixed(1)} mm
                   </span>
                 </div>
@@ -849,18 +849,18 @@ export default function StlViewerSection({ onBack, showToast }: StlViewerSection
 
               <button
                 onClick={handleDownloadSTL}
-                className="w-full py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white font-medium text-xs rounded-xl shadow transition cursor-pointer flex items-center justify-center gap-1.5"
+                className="w-full py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white uppercase tracking-wider font-semibold text-[10px] rounded-sm transition cursor-pointer flex items-center justify-center gap-1.5 mt-auto"
               >
                 <Sparkles className="w-3.5 h-3.5" />
                 Export Model (STL)
               </button>
             </div>
           ) : (
-            <div className="flex-1 flex flex-col items-center justify-center text-center p-4 bg-slate-950/20 rounded-2xl border border-slate-900 border-dashed">
-              <Box className="w-7 h-7 text-slate-700 mb-2" />
-              <p className="text-xs text-slate-400">No active model loaded</p>
-              <p className="text-[10px] text-slate-500 font-sans mt-1">
-                Upload or select a tooth, impeller or bracket template.
+            <div className="flex-1 flex flex-col items-center justify-center text-center p-4 bg-[#080d19] rounded-sm border border-slate-900 border-dashed">
+              <Box className="w-6 h-6 text-slate-700 mb-2" />
+              <p className="text-[11px] font-mono text-slate-500 uppercase tracking-widest">No Active Model</p>
+              <p className="text-[10px] text-slate-600 font-sans mt-2">
+                Upload or select a template to begin analysis.
               </p>
             </div>
           )}
@@ -868,10 +868,10 @@ export default function StlViewerSection({ onBack, showToast }: StlViewerSection
 
         {/* Viewport Canvas */}
         <div className="flex-1 relative bg-[#050811] flex flex-col p-4">
-          <div className="relative w-full h-full rounded-2xl overflow-hidden border border-slate-900 shadow-xl bg-[#03060c]">
+          <div className="relative w-full h-full rounded-sm overflow-hidden border border-slate-900 bg-[#03060c]">
             <div ref={containerRef} className="w-full h-full cursor-grab active:cursor-grabbing" />
 
-            <div className="absolute bottom-4 left-4 right-4 bg-[#080d19]/90 border border-slate-800 rounded-xl p-3 flex items-center justify-between text-[11px] font-mono text-slate-400">
+            <div className="absolute bottom-4 left-4 right-4 bg-[#080d19] border border-slate-800 rounded-sm p-3 flex items-center justify-between text-[11px] font-mono text-slate-400">
               <span className="flex items-center gap-1.5">
                 <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
                 <span>100% Secure Client-Side Verification (Offline-safe)</span>
@@ -880,7 +880,7 @@ export default function StlViewerSection({ onBack, showToast }: StlViewerSection
             </div>
 
             {loading && (
-              <div className="absolute inset-0 bg-[#050811]/70 backdrop-blur-sm flex flex-col items-center justify-center">
+              <div className="absolute inset-0 bg-[#050811]/90 flex flex-col items-center justify-center">
                 <RotateCw className="w-6 h-6 text-sky-400 animate-spin mb-2" />
                 <span className="text-xs font-mono text-slate-300 uppercase tracking-wider">Parsing Model Geometry...</span>
               </div>
